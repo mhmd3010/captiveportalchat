@@ -1,0 +1,228 @@
+/* Captive Portal Chat - shared admin styles.
+ * The Chat Inbox is built entirely from the core Bootstrap 3 / AdminLTE classes
+ * (see inbox.tpl) and carries no custom CSS of its own. What remains here is the
+ * navbar notification bell + its toast, which render on every admin page and
+ * therefore can't live inside a single template, plus two small helpers.
+ * Colours come from CSS variables so the bell follows the admin theme, including
+ * the theme's own `.dark-mode` toggle. */
+:root {
+    --cpchat-bg: #fff;
+    --cpchat-bg-alt: #f7f9fb;
+    --cpchat-bg-thread: #f4f6f9;
+    --cpchat-bg-hover: #f2f7fd;
+    --cpchat-bubble: #fff;
+    --cpchat-bubble-border: #e8edf2;
+    --cpchat-bubble-me: #1e88e5;
+    --cpchat-bubble-sys: #e9eef3;
+    --cpchat-text: #242a31;
+    --cpchat-text-soft: #55606b;
+    --cpchat-text-muted: #8a949e;
+    --cpchat-line: #f0f2f5;
+    --cpchat-code-bg: #eef2f6;
+    --cpchat-accent: #1e88e5;
+    --cpchat-danger: #e53935;
+}
+body.dark-mode {
+    --cpchat-bg: #2d3748;
+    --cpchat-bg-alt: #283242;
+    --cpchat-bg-thread: #232b3a;
+    --cpchat-bg-hover: #35415a;
+    --cpchat-bubble: #3b475c;
+    --cpchat-bubble-border: #4a5568;
+    --cpchat-bubble-me: #1e88e5;
+    --cpchat-bubble-sys: #33405a;
+    --cpchat-text: #e2e8f0;
+    --cpchat-text-soft: #cbd5e0;
+    --cpchat-text-muted: #93a2b8;
+    --cpchat-line: #4a5568;
+    --cpchat-code-bg: #1f2735;
+    --cpchat-accent: #63b3ed;
+}
+/* ---------- navbar bell ---------- */
+.cpchat-bell > a {
+    position: relative;
+}
+.cpchat-bell .cpchat-ico,
+.cpchat-menu .cpchat-ico {
+    display: inline-block;
+    vertical-align: -3px;
+    fill: none;
+}
+.cpchat-bell > a > .cpchat-ico {
+    color: inherit;
+    opacity: .9;
+}
+.cpchat-bell.open > a > .cpchat-ico {
+    opacity: 1;
+}
+.cpchat-menu .cpchat-ico-sm {
+    vertical-align: -2px;
+    margin-right: 2px;
+}
+.cpchat-bell .cpchat-count {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 2px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--cpchat-danger);
+    color: #fff;
+    font-size: 10px;
+    line-height: 17px;
+    text-align: center;
+    font-weight: 700;
+}
+.cpchat-bell.has-unread .cpchat-count {
+    display: block;
+}
+.cpchat-bell .cpchat-dot {
+    display: none;
+}
+.cpchat-menu {
+    min-width: 320px;
+    padding: 0;
+    max-height: 70vh;
+    overflow: hidden;
+    background: var(--cpchat-bg);
+    border: 1px solid var(--cpchat-line);
+    color: var(--cpchat-text);
+}
+.cpchat-menu > li.cpchat-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--cpchat-line);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--cpchat-text-soft);
+    background: var(--cpchat-bg-alt);
+}
+.cpchat-menu > li.cpchat-head .cpchat-open {
+    float: right;
+    color: var(--cpchat-accent);
+    font-weight: 600;
+}
+.cpchat-menu .cpchat-list {
+    padding: 0;
+    list-style: none;
+    max-height: 52vh;
+    overflow-y: auto;
+}
+.cpchat-menu .cpchat-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.cpchat-menu .cpchat-items > li {
+    border-bottom: 1px solid var(--cpchat-line);
+    margin: 0;
+    padding: 0;
+}
+.cpchat-menu .cpchat-items > li > a {
+    display: block;
+    padding: 9px 14px;
+    white-space: normal;
+    line-height: 1.35;
+    color: var(--cpchat-text);
+}
+.cpchat-menu .cpchat-items > li > a:hover {
+    background: var(--cpchat-bg-hover);
+}
+.cpchat-menu .cpchat-items .cpchat-who {
+    display: block;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--cpchat-text);
+}
+.cpchat-menu .cpchat-items .cpchat-when {
+    position: absolute;
+    right: 14px;
+    font-size: 10px;
+    color: var(--cpchat-text-muted);
+}
+.cpchat-menu .cpchat-items .cpchat-text {
+    display: block;
+    font-size: 12px;
+    color: var(--cpchat-text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 290px;
+    white-space: nowrap;
+}
+.cpchat-menu .cpchat-empty {
+    padding: 14px;
+    color: var(--cpchat-text-muted);
+    font-size: 12px;
+    text-align: center;
+}
+.cpchat-menu > li.cpchat-foot {
+    padding: 0;
+    background: var(--cpchat-bg-alt);
+    border-top: 1px solid var(--cpchat-line);
+}
+.cpchat-menu > li.cpchat-foot > a {
+    display: block;
+    padding: 9px 14px;
+    font-size: 12px;
+    color: var(--cpchat-accent);
+    font-weight: 600;
+}
+.cpchat-toast {
+    position: fixed;
+    right: 16px;
+    top: 70px;
+    z-index: 100000;
+    width: 300px;
+    background: var(--cpchat-bg);
+    color: var(--cpchat-text);
+    border-left: 4px solid var(--cpchat-accent);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, .22);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    animation: cpchat-in .25s ease-out;
+    font-size: 12px;
+}
+.cpchat-toast b {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+.cpchat-toast span {
+    color: var(--cpchat-text-soft);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cpchat-toast.out {
+    opacity: 0;
+    transition: opacity .5s;
+}
+@keyframes cpchat-in {
+    from {
+        transform: translateY(-12px);
+        opacity: 0;
+    }
+    to {
+        transform: none;
+        opacity: 1;
+    }
+}
+/* ---------- settings: installation code preview ---------- */
+.cpchat-snippet {
+    font-family: Menlo, Consolas, monospace;
+    font-size: 11px;
+    white-space: pre;
+    background: #1e2227;
+    color: #e6edf3;
+    border: 0;
+    padding: 12px;
+    height: 220px;
+    border-radius: 6px;
+}
+/* ---------- dashboard: whole latest-chats row opens the conversation ---------- */
+tr.cpchat-row-link {
+    cursor: pointer;
+}
