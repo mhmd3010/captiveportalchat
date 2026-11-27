@@ -602,12 +602,20 @@
         els.chat.style.display = 'flex';
     }
 
+    function isLoggedIn() {
+        return !!(page && page.page === 'status' && page.username && !/^\$\(/.test(page.username));
+    }
+
     function openPanel() {
         state.open = true;
         els.panel.className = 'cpchat-panel on';
         els.button.style.display = 'none';
         if (!state.token) {
-            showForm('');
+            if (isLoggedIn()) {
+                startLoggedIn();
+            } else {
+                showForm('');
+            }
         } else {
             showChat();
             poll(true);
@@ -616,6 +624,39 @@
         try {
             els.input.focus();
         } catch (e) { }
+    }
+
+    function startLoggedIn() {
+        var data = meta();
+        honeypotData(data);
+        showChat();
+        note('Connecting\u2026');
+        post(urls.start, data, function (res) {
+            note('');
+            if (res.error || !res.success) {
+                showForm(res.error ? 'Cannot reach support. Try again.' : res.message);
+                return;
+            }
+            if (res.config) {
+                cfg.open = res.config.open !== false;
+                if (res.config.awayMessage) { cfg.awayMessage = res.config.awayMessage; }
+                if (res.config.hours) { cfg.hours = res.config.hours; }
+                paintState();
+            }
+            state.token = res.token;
+            state.status = res.status;
+            state.seen = 0;
+            store.set('cpchat_token', res.token);
+            els.body.innerHTML = '';
+            renderMessages(res.messages || [], false);
+            if (res.messages && res.messages.length) {
+                state.seen = res.messages[res.messages.length - 1].id;
+                store.set('cpchat_seen', String(state.seen));
+            }
+            setBadge(0);
+            tick();
+            flushQueue();
+        });
     }
 
     function closePanel() {

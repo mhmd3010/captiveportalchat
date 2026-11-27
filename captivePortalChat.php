@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.8';
+$GLOBALS['captivePortalChat_version'] = '2.3.9';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -1363,11 +1363,26 @@ function cpchatStart()
     $router = cpchat_meta_value(isset($b['router']) ? $b['router'] : '', 60);
     $page = cpchat_meta_value(isset($b['page']) ? $b['page'] : '', 15);
 
+    // Logged-in hotspot customer on status page: auto-fill from tbl_customers & skip captcha
+    $verifiedCustomer = false;
+    if ($page === 'status' && $username !== '') {
+        $cust = ORM::for_table('tbl_customers')->where('username', $username)->find_one();
+        if ($cust) {
+            $verifiedCustomer = true;
+            if ($name === '') {
+                $name = cpchat_clean_name($cust->fullname !== '' ? $cust->fullname : $cust->username, 60);
+            }
+            if ($phone === '') {
+                $phone = cpchat_meta_value($cust->phonenumber !== '' ? $cust->phonenumber : '000000', 24);
+            }
+        }
+    }
+
     if ($name === '' || mb_strlen($name) < 2) {
         cpchat_error('Please enter your name');
     }
     $digits = preg_replace('/\D/', '', $phone);
-    if (strlen($digits) < 6 || strlen($digits) > 15) {
+    if (!$verifiedCustomer && (strlen($digits) < 6 || strlen($digits) > 15)) {
         cpchat_error('Please enter a valid phone number');
     }
 
@@ -1375,7 +1390,7 @@ function cpchatStart()
     if (cpchat_honeypot_filled($b)) {
         cpchat_reject('honeypot', 'start', Lang::T('Please enter your name and phone number'));
     }
-    if ($s['spam_captcha']) {
+    if ($s['spam_captcha'] && !$verifiedCustomer) {
         $answer = isset($b['captcha']) ? trim((string) $b['captcha']) : '';
         $challenge = isset($b['captcha_token']) ? trim((string) $b['captcha_token']) : '';
         if (!cpchat_captcha_check($challenge, $answer)) {
