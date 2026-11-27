@@ -207,7 +207,7 @@
                                                 {/if}
                                             </div>
                                         {/if}
-                                        <small style="display:block;margin-top:4px;opacity:.75;">{if $m.sender eq 'admin' && $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}</small>
+                                        <small style="display:block;margin-top:4px;opacity:.75;">{if $m.sender eq 'admin' && $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}{if $m.sender eq 'admin'} <span class="cpchat-admin-tick" data-msg-id="{$m.id}">{if $m.is_read}✓✓{else}✓{/if}</span>{/if}</small>
                                     </div>
                                 </div>
                             {/if}
@@ -609,9 +609,10 @@
                     }
                 }
                 var bodyHtml = (!m.attachment || m.body !== m.attachment.name) ? esc(m.body) : '';
+                var tickHtml = isMe ? (' <span class="cpchat-admin-tick" data-msg-id="' + (m.id || 0) + '">' + (m.is_read ? '\u2713\u2713' : '\u2713') + '</span>') : '';
                 bubble.innerHTML = bodyHtml + attHtml
                     + '<small style="' + tsStyle + '">'
-                    + (isMe && m.sender_name ? esc(m.sender_name) + ' · ' : '') + esc(m.time) + '</small>';
+                    + (isMe && m.sender_name ? esc(m.sender_name) + ' · ' : '') + esc(m.time) + tickHtml + '</small>';
                 row.appendChild(bubble);
             }
             threadEl.appendChild(row);
@@ -636,6 +637,15 @@
                     }
                     if (typingEl) {
                         typingEl.style.display = res.customer_typing ? 'block' : 'none';
+                    }
+                    if (res.customer_seen_id) {
+                        var ticks = threadEl.querySelectorAll('.cpchat-admin-tick');
+                        for (var tIdx = 0; tIdx < ticks.length; tIdx++) {
+                            var mid = parseInt(ticks[tIdx].getAttribute('data-msg-id'), 10) || 0;
+                            if (mid > 0 && mid <= res.customer_seen_id) {
+                                ticks[tIdx].textContent = '\u2713\u2713';
+                            }
+                        }
                     }
                 }
                 if (res && res.last_id) {

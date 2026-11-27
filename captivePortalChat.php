@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.5';
+$GLOBALS['captivePortalChat_version'] = '2.3.6';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -523,6 +523,7 @@ function cpchat_message_row($m)
         'sender_name' => $m['sender_name'],
         'body' => $m['body'],
         'attachment' => $att,
+        'is_read' => isset($m['is_read']) ? (int) $m['is_read'] : 0,
         'ref' => $m['client_ref'],
         'at' => $m['created_at'],
         'time' => date('H:i:s', strtotime($m['created_at'])),
@@ -1595,12 +1596,18 @@ function cpchatPoll()
     }
 
     $typing = !empty($conversation->admin_typing_at) && strtotime($conversation->admin_typing_at) >= (time() - 5);
+    $adminSeenId = (int) ORM::for_table('tbl_cpchat_messages')
+        ->where('conversation_id', $conversation->id())
+        ->where('sender', 'customer')
+        ->where('is_read', 1)
+        ->max('id');
     cpchat_json([
         'success' => true,
         'status' => $conversation->status,
         'messages' => $messages,
         'open' => cpchat_is_open(),
         'typing' => $typing,
+        'admin_seen_id' => $adminSeenId,
         'rating' => (int) $conversation->rating,
         'last_id' => empty($messages) ? $since : $messages[count($messages) - 1]['id'],
     ]);
@@ -2421,6 +2428,7 @@ function cpchatAdminThread()
         'conversation' => cpchat_conversation_payload($freshArr),
         'customer' => cpchat_customer_match($freshArr),
         'customer_typing' => $custTyping,
+        'customer_seen_id' => (int) $fresh->customer_seen_id,
         'messages' => $messages,
         'last_id' => $lastId,
     ]);

@@ -182,7 +182,10 @@
             '.cpchat-bubble{max-width:84%;padding:11px 14px;border-radius:16px;background:#fff;border:1px solid #e5e7eb;color:#111827;',
             'white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:13.5px}',
             '.cpchat-row.me .cpchat-bubble{background:#f3f4f6;border-color:#f3f4f6;color:#111827}',
-            '.cpchat-meta{display:block;font-size:10px;color:#9ca3af;margin-top:4px}',
+            '.cpchat-meta{display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:10px;color:#9ca3af;margin-top:4px}',
+            '.cpchat-tick{font-size:11px;font-weight:700;letter-spacing:-1px;color:#9ca3af}',
+            '.cpchat-tick.seen{color:#2563eb}',
+            '.cpchat-tick.fail{color:#dc2626}',
             '.cpchat-sys{align-self:center;font-size:11.5px;color:#6b7280;text-align:center;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 12px;margin:0 auto 10px;max-width:90%}',
             '.cpchat-att-pill{display:flex;align-items:center;gap:10px;background:#111827;color:#fff;border-radius:12px;padding:9px 12px;margin-top:6px;text-decoration:none;font-size:12.5px;font-weight:500}',
             '.cpchat-att-pill:hover{background:#1f2937}',
@@ -297,19 +300,26 @@
             var attEl = renderAttachment(m.attachment);
             if (attEl) { b.appendChild(attEl); }
         }
-        var stamp = el('span', 'cpchat-meta', m.time || '');
+        var stamp = el('span', 'cpchat-meta', '');
+        stamp.appendChild(el('span', '', m.pending ? 'sending\u2026' : (m.failed ? m.failed : (m.time || ''))));
+        if (m.sender === 'customer') {
+            var tickCls = 'cpchat-tick' + (m.failed ? ' fail' : (m.is_read ? ' seen' : ''));
+            var tickTxt = m.pending ? '\u23f3' : (m.failed ? '!' : (m.is_read ? '\u2713\u2713' : '\u2713'));
+            stamp.appendChild(el('span', tickCls, tickTxt));
+        }
         if (m.pending) {
             row.className += ' cpchat-pending';
-            stamp.textContent = 'sending\u2026';
         }
         if (m.failed) {
-            stamp.textContent = m.failed;
             b.style.cursor = 'pointer';
             b.onclick = function () {
                 retry(m.ref);
             };
         }
         b.appendChild(stamp);
+        if (m.id) {
+            b.setAttribute('data-msg-id', String(m.id));
+        }
         if (m.ref) {
             b.setAttribute('data-ref', m.ref);
         }
@@ -746,6 +756,19 @@
             if (els.typing) {
                 els.typing.style.display = res.typing ? 'block' : 'none';
             }
+            if (res.admin_seen_id) {
+                var myBubbles = els.body.querySelectorAll('.cpchat-row.me .cpchat-bubble[data-msg-id]');
+                for (var sIdx = 0; sIdx < myBubbles.length; sIdx++) {
+                    var mid = parseInt(myBubbles[sIdx].getAttribute('data-msg-id'), 10) || 0;
+                    if (mid > 0 && mid <= res.admin_seen_id) {
+                        var tk = myBubbles[sIdx].querySelector('.cpchat-tick');
+                        if (tk) {
+                            tk.className = 'cpchat-tick seen';
+                            tk.textContent = '\u2713\u2713';
+                        }
+                    }
+                }
+            }
             if (res.status === 'closed') {
                 setBadge(0);
                 if (els.typing) { els.typing.style.display = 'none'; }
@@ -792,7 +815,12 @@
                 row.className = 'cpchat-row me';
                 var stamp = nodes[i].querySelector('.cpchat-meta');
                 if (stamp) {
-                    stamp.textContent = timeStr();
+                    stamp.innerHTML = '';
+                    stamp.appendChild(el('span', '', timeStr()));
+                    stamp.appendChild(el('span', 'cpchat-tick', '\u2713'));
+                }
+                if (id) {
+                    nodes[i].setAttribute('data-msg-id', String(id));
                 }
                 nodes[i].style.cursor = '';
                 nodes[i].onclick = null;
