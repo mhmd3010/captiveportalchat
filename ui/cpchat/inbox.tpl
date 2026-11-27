@@ -3,13 +3,9 @@
 <div class="row">
     <div class="col-md-12">
         <div class="panel panel-primary panel-hovered panel-stacked mb30">
-            <div class="panel-heading">
-                <div class="btn-group pull-right">
-                    <a href="{$_url}plugin/captivePortalChat" class="btn btn-default btn-xs"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
-                    <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-default btn-xs"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
-                    <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="btn btn-default btn-xs"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
-                </div>
-                <div style="clear:both;margin-top:8px;">
+            <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+                    <strong style="margin-right:6px;"><i class="fa fa-comments"></i> {Lang::T('Inbox')}</strong>
                     {if $open_now}
                         <span class="label label-success"><i class="fa fa-circle"></i> {Lang::T('Online')}</span>
                     {else}
@@ -18,6 +14,11 @@
                     <span class="label label-info" title="{Lang::T('Open chats')}">{Lang::T('Open')}: {$stats.open|default:0}</span>
                     <span class="label label-warning" title="{Lang::T('Waiting for a reply')}">{Lang::T('Waiting')}: {$stats.waiting|default:0}</span>
                     <span class="label label-danger" title="{Lang::T('Unread messages')}">{Lang::T('Unread')}: {$stats.unread|default:0}</span>
+                </div>
+                <div class="btn-group">
+                    <a href="{$_url}plugin/captivePortalChat" class="btn btn-default btn-xs"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
+                    <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-default btn-xs"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
+                    <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="btn btn-default btn-xs"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
                 </div>
             </div>
             <div class="panel-body">
@@ -40,6 +41,7 @@
                     </div>
                 {/if}
 
+                <div class="cpchat-split">
                 <div id="cpchatListView">
                     <div class="panel panel-default">
                         <div class="panel-heading">
@@ -235,6 +237,7 @@
                             </button>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

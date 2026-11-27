@@ -95,9 +95,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group" style="display:flex; align-items:center; gap:12px;">
+                            <div class="form-group">
                                 <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> {Lang::T('Save settings')}</button>
-                                <small class="text-muted" style="background:transparent; padding:0;">v{$cpchat_version|escape:'html'}</small>
                             </div>
                         </form>
                     </div>
