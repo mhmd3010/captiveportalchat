@@ -181,24 +181,29 @@
             '.cpchat-foot button[disabled]{opacity:.55}',
             '.cpchat-note{padding:6px 12px;font-size:11px;color:#92400e;background:#fef3c7;border-top:1px solid #fde68a;display:none}',
             '.cpchat-note.on{display:block}',
-            '.cpchat-form{padding:16px;background:#fff;overflow-y:auto}',
+            '.cpchat-form{flex:1;padding:14px 16px;background:#fff;overflow-y:auto;scrollbar-width:thin}',
+            '.cpchat-form::-webkit-scrollbar,.cpchat-body::-webkit-scrollbar{width:5px}',
+            '.cpchat-form::-webkit-scrollbar-thumb,.cpchat-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}',
             '.cpchat-form label{display:block;font-size:12px;font-weight:600;color:#475569;margin:0 0 4px}',
-            '.cpchat-form input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:14px;margin-bottom:12px;outline:none;background:#f8fafc}',
-            '.cpchat-form input:focus{border-color:#2563eb;background:#fff}',
-            '.cpchat-form button{width:100%;border:0;background:#2563eb;color:#fff;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer}',
-            '.cpchat-err{color:#dc2626;font-size:12px;margin:-4px 0 10px;display:none}',
+            '.cpchat-form input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:8px 11px;font-size:13.5px;margin-bottom:10px;outline:none;background:#f8fafc}',
+            '.cpchat-form input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}',
+            '.cpchat-start-btn{width:100%;border:0;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:10px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:2px;box-shadow:0 2px 8px rgba(37,99,235,.25)}',
+            '.cpchat-start-btn[disabled]{opacity:.6}',
+            '.cpchat-err{color:#dc2626;font-size:12px;margin:-2px 0 8px;display:none}',
             '.cpchat-err.on{display:block}',
             '.cpchat-pending{opacity:.6}',
             '.cpchat-hp{position:absolute!important;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}',
-            '.cpchat-cap{font-size:12px;color:#475569;margin:-4px 0 10px}',
-            '.cpchat-cap b{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:3px 8px;margin-left:4px;color:#1d4ed8;font-size:13px}',
+            '.cpchat-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#475569;margin:0 0 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:7px 10px}',
+            '.cpchat-cap b{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;margin-left:4px;color:#1d4ed8;font-size:12.5px}',
+            '.cpchat-cap input{width:76px;margin:0;text-align:center;padding:6px 8px;background:#fff}',
             '.cpchat-state{font-size:10px;font-weight:600;background:rgba(255,255,255,.22);border-radius:999px;padding:2px 8px;white-space:nowrap}',
             '.cpchat-state.off{background:#dc2626}',
-            '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:9px 11px;margin:0 0 12px}',
+            '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:8px 10px;margin:0 0 10px}',
             '.cpchat-offline b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}',
-            '.cpchat-brand{font-size:10px;color:#94a3b8;text-align:center;padding:5px 0 7px;background:#fff}',
+            '.cpchat-brand{font-size:10.5px;color:#94a3b8;text-align:center;padding:6px 0 8px;background:#fff;border-top:1px solid #f1f5f9}',
             '.cpchat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0}',
-            '.cpchat-chip{background:#fff;border:1px solid #cbd5e1;color:#1e293b;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:500;cursor:pointer;line-height:1.3;transition:all .15s}',
+            '.cpchat-form .cpchat-quick{background:transparent;border:0;padding:0;margin:0 0 12px}',
+            '.cpchat-chip{width:auto;background:#fff;border:1px solid #cbd5e1;color:#1e293b;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.35;transition:all .15s}',
             '.cpchat-chip:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}',
             '.cpchat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:6px 0;font-size:12.5px;color:#1e293b;box-shadow:0 1px 3px rgba(15,23,42,.05)}',
             '.cpchat-card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:#0f172a;display:flex;justify-content:space-between;align-items:center}',
@@ -1024,7 +1029,7 @@
         }
         els.err = el('div', 'cpchat-err', '');
         els.form.appendChild(els.err);
-        els.startBtn = el('button', '', 'Start chat');
+        els.startBtn = el('button', 'cpchat-start-btn', 'Start chat');
         els.startBtn.setAttribute('type', 'button');
         els.startBtn.onclick = startChat;
         els.form.appendChild(els.startBtn);
