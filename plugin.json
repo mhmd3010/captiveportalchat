@@ -1,0 +1,12 @@
+{
+    "name": "Captive Portal Chat",
+    "slug": "captivePortalChat",
+    "version": "2.1.2",
+    "description": "Live customer support chat widget for MikroTik Hotspot captive portal pages (login, logout, status) with admin inbox, canned replies, and spam protection.",
+    "author": "mhmd3010",
+    "url": "https://t.me/mhmd_3010",
+    "github": "https://github.com/mhmd3010/captiveportalchat",
+    "update_url": "https://raw.githubusercontent.com/mhmd3010/captiveportalchat/master/plugin.json",
+    "requires_php": "8.2",
+    "main": "captivePortalChat.php"
+}
