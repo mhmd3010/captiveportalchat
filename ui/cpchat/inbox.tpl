@@ -1,6 +1,6 @@
 {include file="sections/header.tpl"}
 
-<div class="cp-page">
+<div class="cp-page cp-inbox-page">
     <div class="cp-head">
         <div class="cp-head-title">
             <h2><i class="fa fa-inbox" style="color:#2563eb;margin-right:6px;"></i> {Lang::T('Inbox')}</h2>
@@ -510,13 +510,12 @@
         if (c.router) { cells.push(metaCell('fa-server', 'Router', c.router)); }
         if (c.page) { cells.push(metaCell('fa-file-o', 'Page', c.page)); }
         cells.push(metaCell('fa-clock-o', 'Created', (c.created_dt || c.created_at)));
-        metaEl.innerHTML = '<div class="row" style="margin:0;">' + cells.join('') + '</div>';
+        metaEl.innerHTML = cells.join('');
         metaEl.style.display = '';
     }
 
     function metaCell(icon, label, value) {
-        return '<div class="col-xs-6 col-sm-4 col-md-2">'
-            + '<small class="text-muted"><i class="fa ' + icon + '"></i> ' + esc(label) + ':</small> <code>' + esc(value) + '</code></div>';
+        return '<span class="cp-meta-chip"><i class="fa ' + icon + '"></i> ' + esc(label) + ': <b>' + esc(value) + '</b></span>';
     }
 
     function renderCustomerBox(cust) {
