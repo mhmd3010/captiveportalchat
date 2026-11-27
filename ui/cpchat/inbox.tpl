@@ -141,15 +141,15 @@
                                     <i class="fa fa-tag"></i>
                                 </button>
                                 <div class="btn-group" style="display:inline-block;vertical-align:middle;">
-                                    <button type="button" class="btn btn-default btn-xs dropdown-toggle" id="cpchatMoreBtn" disabled data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <button type="button" class="btn btn-default btn-xs dropdown-toggle" id="cpchatMoreBtn" disabled data-bs-toggle="dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                         <i class="fa fa-ellipsis-h"></i> <span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-right">
-                                        <li><a href="#" id="cpchatSpamBtn"><i class="fa fa-ban"></i> {Lang::T('Mark as spam')}</a></li>
-                                        <li><a href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>
-                                        <li role="separator" class="divider"></li>
-                                        <li><a href="#" id="cpchatChatCsv"><i class="fa fa-file-text-o"></i> {Lang::T('Transcript CSV')}</a></li>
-                                        <li><a href="#" id="cpchatChatPdf"><i class="fa fa-file-pdf-o"></i> {Lang::T('Transcript PDF')}</a></li>
+                                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-right">
+                                        <li><a class="dropdown-item" href="#" id="cpchatSpamBtn"><i class="fa fa-ban"></i> {Lang::T('Mark as spam')}</a></li>
+                                        <li><a class="dropdown-item" href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>
+                                        <li role="separator" class="divider dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" id="cpchatChatCsv"><i class="fa fa-file-text-o"></i> {Lang::T('Transcript CSV')}</a></li>
+                                        <li><a class="dropdown-item" href="#" id="cpchatChatPdf"><i class="fa fa-file-pdf-o"></i> {Lang::T('Transcript PDF')}</a></li>
                                     </ul>
                                 </div>
                                 <button type="button" class="btn btn-primary btn-xs" id="cpchatToggleStatus" style="vertical-align:middle;" {if !$active}disabled{/if}>
