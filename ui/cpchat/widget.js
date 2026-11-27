@@ -157,62 +157,84 @@
             '.cpchat-badge{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;',
             'font-size:11px;font-weight:700;line-height:20px;padding:0 5px;display:none;font-family:sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.25)}',
             '.cpchat-badge.on{display:block}',
-            '.cpchat-panel{position:fixed;right:18px;bottom:18px;z-index:99991;width:360px;max-width:calc(100vw - 24px);height:500px;',
-            'max-height:calc(100vh - 32px);background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(15,23,42,.22);border:1px solid #e2e8f0;display:none;',
-            'flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;color:#0f172a}',
+            '.cpchat-panel{position:fixed;right:18px;bottom:18px;z-index:99991;width:370px;max-width:calc(100vw - 24px);height:540px;',
+            'max-height:calc(100vh - 32px);background:#fff;border-radius:22px;box-shadow:0 20px 60px rgba(15,23,42,.18);border:1px solid #eef2f7;display:none;',
+            'flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;color:#111827}',
             '.cpchat-panel.on{display:flex}',
-            '@media (max-width:480px){.cpchat-panel{right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:calc(100vh - 20px);max-height:560px;border-radius:14px}}',
-            '.cpchat-head{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px}',
-            '.cpchat-head b{flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-            '.cpchat-head button{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer}',
-            '.cpchat-body{flex:1;overflow-y:auto;padding:14px;background:#f8fafc;-webkit-overflow-scrolling:touch}',
+            '@media (max-width:480px){.cpchat-panel{right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:calc(100vh - 20px);max-height:600px;border-radius:18px}}',
+            '.cpchat-head{background:#fff;color:#111827;padding:12px 14px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f1f5f9}',
+            '.cpchat-orb{width:34px;height:34px;border-radius:50%;flex-shrink:0;position:relative;',
+            'background:radial-gradient(circle at 30% 30%,#fde047 0%,#fb7185 38%,#c084fc 72%,#60a5fa 100%);',
+            'box-shadow:0 4px 14px rgba(244,114,182,.35)}',
+            '.cpchat-orb-dot{position:absolute;right:0;bottom:0;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid #fff}',
+            '.cpchat-orb-dot.off{background:#ef4444}',
+            '.cpchat-head-info{flex:1;min-width:0}',
+            '.cpchat-head-info b{display:block;font-size:13.5px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+            '.cpchat-state{display:inline-block;font-size:11px;font-weight:500;color:#6b7280;white-space:nowrap}',
+            '.cpchat-state.off{color:#dc2626}',
+            '.cpchat-icon-btn{background:transparent;border:0;color:#6b7280;width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}',
+            '.cpchat-icon-btn:hover{background:#f3f4f6;color:#111827}',
+            '.cpchat-head button.cpchat-new-btn{background:#f3f4f6;border:0;color:#374151;border-radius:8px;padding:4px 9px;font-size:11.5px;font-weight:600;cursor:pointer}',
+            '.cpchat-body{flex:1;overflow-y:auto;padding:14px;background:#fff;-webkit-overflow-scrolling:touch;scrollbar-width:thin}',
             '.cpchat-row{display:flex;margin-bottom:10px}',
             '.cpchat-row.me{justify-content:flex-end}',
-            '.cpchat-bubble{max-width:82%;padding:9px 13px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,.05);',
-            'white-space:pre-wrap;word-break:break-word;line-height:1.4;font-size:13.5px}',
-            '.cpchat-row.me .cpchat-bubble{background:#2563eb;border-color:#1d4ed8;color:#fff;border-radius:16px 16px 4px 16px}',
-            '.cpchat-meta{display:block;font-size:10px;opacity:.7;margin-top:4px}',
-            '.cpchat-sys{align-self:center;font-size:11px;color:#475569;text-align:center;background:#e2e8f0;border-radius:999px;padding:4px 10px;margin:0 auto 10px;max-width:90%}',
-            '.cpchat-foot{border-top:1px solid #e2e8f0;padding:10px;display:flex;gap:8px;align-items:flex-end;background:#fff}',
-            '.cpchat-foot textarea{flex:1;resize:none;border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;font-size:14px;max-height:88px;',
-            'min-height:38px;font-family:inherit;outline:none;background:#f8fafc}',
-            '.cpchat-foot textarea:focus{border-color:#2563eb;background:#fff}',
-            '.cpchat-foot button{border:0;background:#2563eb;color:#fff;border-radius:10px;padding:0 14px;height:38px;cursor:pointer;font-size:13px;font-weight:600}',
-            '.cpchat-foot button[disabled]{opacity:.55}',
+            '.cpchat-bubble{max-width:84%;padding:11px 14px;border-radius:16px;background:#fff;border:1px solid #e5e7eb;color:#111827;',
+            'white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:13.5px}',
+            '.cpchat-row.me .cpchat-bubble{background:#f3f4f6;border-color:#f3f4f6;color:#111827}',
+            '.cpchat-meta{display:block;font-size:10px;color:#9ca3af;margin-top:4px}',
+            '.cpchat-sys{align-self:center;font-size:11.5px;color:#6b7280;text-align:center;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 12px;margin:0 auto 10px;max-width:90%}',
+            '.cpchat-att-pill{display:flex;align-items:center;gap:10px;background:#111827;color:#fff;border-radius:12px;padding:9px 12px;margin-top:6px;text-decoration:none;font-size:12.5px;font-weight:500}',
+            '.cpchat-att-pill:hover{background:#1f2937}',
+            '.cpchat-att-ico{width:26px;height:26px;border-radius:7px;background:#16a34a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}',
+            '.cpchat-att-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+            '.cpchat-att-img{max-width:100%;max-height:180px;border-radius:12px;margin-top:6px;display:block;border:1px solid #e5e7eb}',
+            '.cpchat-att-audio{width:220px;max-width:100%;height:34px;margin-top:6px;display:block}',
+            '.cpchat-foot-wrap{padding:8px 12px 6px;background:#fff}',
+            '.cpchat-foot{border:1px solid #e5e7eb;border-radius:16px;padding:5px 7px;display:flex;gap:4px;align-items:flex-end;background:#fff;box-shadow:0 2px 10px rgba(15,23,42,.05)}',
+            '.cpchat-foot:focus-within{border-color:#cbd5e1;box-shadow:0 4px 14px rgba(15,23,42,.08)}',
+            '.cpchat-foot textarea{flex:1;resize:none;border:0;padding:7px 6px;font-size:13.5px;max-height:84px;min-height:34px;font-family:inherit;outline:none;background:transparent;color:#111827}',
+            '.cpchat-foot .cpchat-send-btn{border:0;background:#111827;color:#fff;border-radius:11px;width:32px;height:32px;display:none;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}',
+            '.cpchat-foot .cpchat-send-btn.on{display:inline-flex}',
+            '.cpchat-rec-bar{display:none;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border:1px solid #fecaca;background:#fef2f2;border-radius:14px;font-size:12.5px;color:#b91c1c}',
+            '.cpchat-rec-bar.on{display:flex}',
+            '.cpchat-rec-bar button{border:0;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}',
             '.cpchat-note{padding:6px 12px;font-size:11px;color:#92400e;background:#fef3c7;border-top:1px solid #fde68a;display:none}',
             '.cpchat-note.on{display:block}',
             '.cpchat-form{flex:1;padding:14px 16px;background:#fff;overflow-y:auto;scrollbar-width:thin}',
             '.cpchat-form::-webkit-scrollbar,.cpchat-body::-webkit-scrollbar{width:5px}',
             '.cpchat-form::-webkit-scrollbar-thumb,.cpchat-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}',
             '.cpchat-form label{display:block;font-size:12px;font-weight:600;color:#475569;margin:0 0 4px}',
-            '.cpchat-form input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:8px 11px;font-size:13.5px;margin-bottom:10px;outline:none;background:#f8fafc}',
-            '.cpchat-form input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}',
-            '.cpchat-start-btn{width:100%;border:0;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:10px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:2px;box-shadow:0 2px 8px rgba(37,99,235,.25)}',
+            '.cpchat-form input{width:100%;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:12px;padding:9px 11px;font-size:13.5px;margin-bottom:10px;outline:none;background:#f9fafb}',
+            '.cpchat-form input:focus{border-color:#94a3b8;background:#fff}',
+            '.cpchat-start-btn{width:100%;border:0;background:#111827;color:#fff;border-radius:12px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:2px}',
             '.cpchat-start-btn[disabled]{opacity:.6}',
             '.cpchat-err{color:#dc2626;font-size:12px;margin:-2px 0 8px;display:none}',
             '.cpchat-err.on{display:block}',
             '.cpchat-pending{opacity:.6}',
             '.cpchat-hp{position:absolute!important;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0}',
-            '.cpchat-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#475569;margin:0 0 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:7px 10px}',
-            '.cpchat-cap b{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;margin-left:4px;color:#1d4ed8;font-size:12.5px}',
+            '.cpchat-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#475569;margin:0 0 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:7px 10px}',
+            '.cpchat-cap b{display:inline-block;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:2px 8px;margin-left:4px;color:#111827;font-size:12.5px}',
             '.cpchat-cap input{width:76px;margin:0;text-align:center;padding:6px 8px;background:#fff}',
-            '.cpchat-state{font-size:10px;font-weight:600;background:rgba(255,255,255,.22);border-radius:999px;padding:2px 8px;white-space:nowrap}',
-            '.cpchat-state.off{background:#dc2626}',
-            '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:8px 10px;margin:0 0 10px}',
+            '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:8px 10px;margin:0 0 10px}',
             '.cpchat-offline b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}',
-            '.cpchat-brand{font-size:10.5px;color:#94a3b8;text-align:center;padding:6px 0 8px;background:#fff;border-top:1px solid #f1f5f9}',
-            '.cpchat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0}',
+            '.cpchat-brand{font-size:10.5px;color:#9ca3af;text-align:center;padding:4px 0 7px;background:#fff}',
+            '.cpchat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9}',
             '.cpchat-form .cpchat-quick{background:transparent;border:0;padding:0;margin:0 0 12px}',
-            '.cpchat-chip{width:auto;background:#fff;border:1px solid #cbd5e1;color:#1e293b;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.35;transition:all .15s}',
-            '.cpchat-chip:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}',
-            '.cpchat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:6px 0;font-size:12.5px;color:#1e293b;box-shadow:0 1px 3px rgba(15,23,42,.05)}',
-            '.cpchat-card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:#0f172a;display:flex;justify-content:space-between;align-items:center}',
+            '.cpchat-chip{width:auto;background:#f9fafb;border:1px solid #e5e7eb;color:#111827;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;line-height:1.35;transition:all .15s}',
+            '.cpchat-chip:hover{border-color:#111827;background:#fff}',
+            '.cpchat-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:10px 12px;margin:6px 0;font-size:12.5px;color:#111827;box-shadow:0 1px 4px rgba(15,23,42,.05)}',
+            '.cpchat-card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:#111827;display:flex;justify-content:space-between;align-items:center}',
             '.cpchat-plan{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #f1f5f9}',
             '.cpchat-plan:first-of-type{border-top:0}',
-            '.cpchat-plan b{color:#2563eb;font-size:13px}',
-            '.cpchat-acct-in{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12.5px;margin-bottom:6px;font-family:inherit}',
-            '.cpchat-acct-btn{width:100%;border:0;border-radius:8px;padding:8px;background:#2563eb;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}',
-            '.cpchat-typing{padding:4px 14px;font-size:12px;color:#64748b;font-style:italic;background:#f8fafc;display:none}',
+            '.cpchat-plan b{color:#111827;font-size:13px}',
+            '.cpchat-acct-in{width:100%;box-sizing:border-box;border:1px solid #e5e7eb;border-radius:10px;padding:7px 9px;font-size:12.5px;margin-bottom:6px;font-family:inherit}',
+            '.cpchat-acct-btn{width:100%;border:0;border-radius:10px;padding:8px;background:#111827;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}',
+            '.cpchat-typing{padding:4px 14px 8px;display:none}',
+            '.cpchat-typing-dots{display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:8px 12px}',
+            '.cpchat-typing-dots span{width:5px;height:5px;border-radius:50%;background:#9ca3af;animation:cpdot 1.2s infinite ease-in-out}',
+            '.cpchat-typing-dots span:nth-child(2){animation-delay:.2s}',
+            '.cpchat-typing-dots span:nth-child(3){animation-delay:.4s}',
+            '@keyframes cpdot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}',
             '.cpchat-rate{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:#f0fdf4;border-top:1px solid #bbf7d0;font-size:12.5px;color:#166534}',
             '.cpchat-rate button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}'
         ].join('');
@@ -220,6 +242,43 @@
         s.id = 'cpchat-style';
         s.appendChild(document.createTextNode(css));
         document.head.appendChild(s);
+    }
+
+    function attUrl(url) {
+        if (!url) { return ''; }
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(state.token || '');
+    }
+
+    function renderAttachment(att) {
+        if (!att || !att.url) { return null; }
+        var url = attUrl(att.url);
+        if (att.kind === 'image') {
+            var a = el('a', '', '');
+            a.href = url;
+            a.target = '_blank';
+            var img = el('img', 'cpchat-att-img', '');
+            img.src = url;
+            img.alt = att.name || 'image';
+            a.appendChild(img);
+            return a;
+        }
+        if (att.kind === 'audio') {
+            var aud = el('audio', 'cpchat-att-audio', '');
+            aud.controls = true;
+            aud.preload = 'metadata';
+            aud.src = url;
+            return aud;
+        }
+        var pill = el('a', 'cpchat-att-pill', '');
+        pill.href = url;
+        pill.target = '_blank';
+        var ext = (att.name || 'DOC').split('.').pop().toUpperCase().slice(0, 4);
+        pill.appendChild(el('span', 'cpchat-att-ico', ext));
+        pill.appendChild(el('span', 'cpchat-att-name', att.name || 'Document'));
+        var dl = el('span', '', '\u2b07');
+        dl.style.opacity = '.8';
+        pill.appendChild(dl);
+        return pill;
     }
 
     function bubble(m) {
@@ -230,7 +289,13 @@
         }
         var row = el('div', 'cpchat-row' + (m.sender === 'customer' ? ' me' : ''));
         var b = el('div', 'cpchat-bubble');
-        b.appendChild(document.createTextNode(m.body));
+        if (m.body && (!m.attachment || m.body !== m.attachment.name)) {
+            b.appendChild(document.createTextNode(m.body));
+        }
+        if (m.attachment) {
+            var attEl = renderAttachment(m.attachment);
+            if (attEl) { b.appendChild(attEl); }
+        }
         var stamp = el('span', 'cpchat-meta', m.time || '');
         if (m.pending) {
             row.className += ' cpchat-pending';
@@ -912,21 +977,35 @@
 
         els.panel = el('div', 'cpchat-panel');
         var head = el('div', 'cpchat-head');
-        head.appendChild(el('b', '', cfg.title || 'Chat with us'));
+        var orb = el('div', 'cpchat-orb');
+        els.orbDot = el('span', 'cpchat-orb-dot');
+        orb.appendChild(els.orbDot);
+        head.appendChild(orb);
+        var headInfo = el('div', 'cpchat-head-info');
+        headInfo.appendChild(el('b', '', cfg.title || 'Chat with us'));
         els.state = el('span', 'cpchat-state', '');
-        head.appendChild(els.state);
-        els.endBtn = el('button', '', 'New chat');
+        headInfo.appendChild(els.state);
+        head.appendChild(headInfo);
+        els.endBtn = el('button', 'cpchat-new-btn', 'New chat');
         els.endBtn.setAttribute('type', 'button');
         els.endBtn.style.display = 'none';
         els.endBtn.onclick = endChat;
-        var closeBtn = el('button', '', 'Close');
+        var gridBtn = el('button', 'cpchat-icon-btn', '');
+        gridBtn.type = 'button';
+        gridBtn.title = 'Quick menu';
+        gridBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="8" cy="3" r="1.4"/><circle cx="13" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="8" cy="13" r="1.4"/><circle cx="13" cy="13" r="1.4"/></svg>';
+        var closeBtn = el('button', 'cpchat-icon-btn', '');
         closeBtn.setAttribute('type', 'button');
+        closeBtn.title = 'Close';
+        closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
         closeBtn.onclick = closePanel;
         head.appendChild(els.endBtn);
+        head.appendChild(gridBtn);
         head.appendChild(closeBtn);
 
         els.body = el('div', 'cpchat-body');
-        els.typing = el('div', 'cpchat-typing', 'Typing \u2026');
+        els.typing = el('div', 'cpchat-typing', '');
+        els.typing.innerHTML = '<div class="cpchat-typing-dots"><span></span><span></span><span></span></div>';
         els.rateBar = el('div', 'cpchat-rate');
         els.rateBar.appendChild(el('span', '', 'Was this helpful?'));
         var rateBtns = el('div', '');
@@ -943,33 +1022,198 @@
         els.rateBar.appendChild(rateBtns);
         els.note = el('div', 'cpchat-note', '');
 
+        var fileIn = document.createElement('input');
+        fileIn.type = 'file';
+        fileIn.accept = '.jpg,.jpeg,.png,.webp,.pdf,.txt,.mp3,.m4a,.wav,.ogg,.webm';
+        fileIn.style.display = 'none';
+        fileIn.onchange = function () {
+            if (fileIn.files && fileIn.files[0]) {
+                uploadFile(fileIn.files[0], '');
+                fileIn.value = '';
+            }
+        };
+
+        var attachBtn = el('button', 'cpchat-icon-btn', '');
+        attachBtn.type = 'button';
+        attachBtn.title = 'Attach image, PDF, or audio';
+        attachBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+        attachBtn.onclick = function () { fileIn.click(); };
+
+        var micBtn = el('button', 'cpchat-icon-btn', '');
+        micBtn.type = 'button';
+        micBtn.title = 'Record voice message';
+        micBtn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+
+        var sendBtn = el('button', 'cpchat-send-btn', '');
+        sendBtn.setAttribute('type', 'button');
+        sendBtn.title = 'Send';
+        sendBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+        sendBtn.onclick = function () {
+            sendMessage();
+            sendBtn.className = 'cpchat-send-btn';
+        };
+
         els.input = document.createElement('textarea');
-        els.input.placeholder = 'Type your message\u2026';
+        els.input.placeholder = 'Type here\u2026';
         els.input.setAttribute('rows', '1');
         els.input.maxLength = maxLength;
         els.input.oninput = function () {
             autosize();
             pingTyping();
+            var hasTxt = els.input.value.replace(/\s+/g, '') !== '';
+            sendBtn.className = 'cpchat-send-btn' + (hasTxt ? ' on' : '');
         };
         els.input.onkeydown = function (ev) {
             if (ev && ev.key === 'Enter' && !ev.shiftKey) {
                 ev.preventDefault();
                 sendMessage();
+                sendBtn.className = 'cpchat-send-btn';
             }
         };
-        var sendBtn = el('button', '', 'Send');
-        sendBtn.setAttribute('type', 'button');
-        sendBtn.onclick = sendMessage;
+
+        var recBar = el('div', 'cpchat-rec-bar', '');
+        var recLabel = el('span', '', '\u25cf Recording 0:00');
+        var recBtns = el('div', '');
+        recBtns.style.display = 'flex';
+        recBtns.style.gap = '6px';
+        var recCancel = el('button', '', 'Cancel');
+        recCancel.type = 'button';
+        recCancel.style.background = '#fff';
+        recCancel.style.color = '#374151';
+        var recSend = el('button', '', 'Send Voice');
+        recSend.type = 'button';
+        recSend.style.background = '#111827';
+        recSend.style.color = '#fff';
+        recBtns.appendChild(recCancel);
+        recBtns.appendChild(recSend);
+        recBar.appendChild(recLabel);
+        recBar.appendChild(recBtns);
+
         var foot = el('div', 'cpchat-foot');
+        foot.appendChild(fileIn);
+        foot.appendChild(attachBtn);
         foot.appendChild(els.input);
+        foot.appendChild(micBtn);
         foot.appendChild(sendBtn);
+
+        var footWrap = el('div', 'cpchat-foot-wrap');
+        footWrap.appendChild(recBar);
+        footWrap.appendChild(foot);
+
+        var recState = { rec: null, chunks: [], timer: null, sec: 0, stream: null };
+        function stopRec(sendAudio) {
+            clearInterval(recState.timer);
+            recBar.className = 'cpchat-rec-bar';
+            foot.style.display = 'flex';
+            if (recState.rec && recState.rec.state !== 'inactive') {
+                recState.rec.onstop = function () {
+                    if (recState.stream) {
+                        recState.stream.getTracks().forEach(function (t) { t.stop(); });
+                    }
+                    if (sendAudio && recState.chunks.length) {
+                        var mime = recState.rec.mimeType || 'audio/webm';
+                        var ext = mime.indexOf('mp4') !== -1 ? 'm4a' : (mime.indexOf('ogg') !== -1 ? 'ogg' : 'webm');
+                        var blob = new Blob(recState.chunks, { type: mime });
+                        uploadFile(blob, 'voice-message.' + ext);
+                    }
+                    recState.chunks = [];
+                };
+                recState.rec.stop();
+            }
+        }
+        recCancel.onclick = function () { stopRec(false); };
+        recSend.onclick = function () { stopRec(true); };
+        micBtn.onclick = function () {
+            if (!state.token || state.status !== 'open') { return; }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+                note('Voice recording requires HTTPS and a modern browser.');
+                setTimeout(function () { note(''); }, 4000);
+                return;
+            }
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+                recState.stream = stream;
+                recState.chunks = [];
+                recState.sec = 0;
+                recState.rec = new MediaRecorder(stream);
+                recState.rec.ondataavailable = function (e) {
+                    if (e.data && e.data.size > 0) { recState.chunks.push(e.data); }
+                };
+                recState.rec.start();
+                foot.style.display = 'none';
+                recBar.className = 'cpchat-rec-bar on';
+                recLabel.textContent = '\u25cf Recording 0:00';
+                recState.timer = setInterval(function () {
+                    recState.sec++;
+                    var mm = Math.floor(recState.sec / 60);
+                    var ss = ('0' + (recState.sec % 60)).slice(-2);
+                    recLabel.textContent = '\u25cf Recording ' + mm + ':' + ss;
+                    if (recState.sec >= 60) { stopRec(true); }
+                }, 1000);
+            }).catch(function () {
+                note('Microphone permission denied or unavailable on HTTP.');
+                setTimeout(function () { note(''); }, 4000);
+            });
+        };
+
+        function uploadFile(file, customName) {
+            if (!state.token || !urls.upload || state.status !== 'open') { return; }
+            if (file.size > 2 * 1024 * 1024) {
+                note('File must be under 2 MB.');
+                setTimeout(function () { note(''); }, 4000);
+                return;
+            }
+            var ref = uuid();
+            var fd = new FormData();
+            fd.append('token', state.token);
+            fd.append('ref', ref);
+            if (customName) {
+                fd.append('file', file, customName);
+            } else {
+                fd.append('file', file);
+            }
+            note('Uploading attachment\u2026');
+            var x = new XMLHttpRequest();
+            x.open('POST', urls.upload, true);
+            x.onreadystatechange = function () {
+                if (x.readyState !== 4) { return; }
+                note('');
+                var res = null;
+                try { res = JSON.parse(x.responseText); } catch (e) { res = null; }
+                if (!res || !res.success) {
+                    note((res && res.message) ? res.message : 'Upload failed');
+                    setTimeout(function () { note(''); }, 4000);
+                    return;
+                }
+                if (res.id > state.seen) {
+                    state.seen = res.id;
+                    store.set('cpchat_seen', String(state.seen));
+                }
+                state.rendered[res.id] = true;
+                els.body.appendChild(bubble({
+                    id: res.id,
+                    sender: 'customer',
+                    body: customName ? 'Voice message' : (file.name || ''),
+                    attachment: res.attachment,
+                    time: timeStr()
+                }));
+                scrollBottom();
+            };
+            x.send(fd);
+        }
 
         els.chat = el('div', '');
         els.chat.style.display = 'none';
         els.chat.style.flex = '1';
         els.chat.style.flexDirection = 'column';
         els.chat.style.minHeight = '0';
-        buildQuickBar(els.chat);
+        var chatQuick = buildQuickBar(els.chat);
+        gridBtn.onclick = function () {
+            if (els.chat.style.display !== 'none' && chatQuick) {
+                chatQuick.style.display = (chatQuick.style.display === 'none') ? 'flex' : 'none';
+            } else {
+                openFaqs();
+            }
+        };
         els.chatOffline = el('div', 'cpchat-offline', '');
         els.chatOffline.style.margin = '8px 12px 0';
         els.chatOffline.appendChild(el('b', '', (cfg.hours && cfg.hours.length) ? cfg.hours : 'Offline'));
@@ -980,7 +1224,7 @@
         els.chat.appendChild(els.typing);
         els.chat.appendChild(els.rateBar);
         els.chat.appendChild(els.note);
-        els.chat.appendChild(foot);
+        els.chat.appendChild(footWrap);
 
         els.form = el('div', 'cpchat-form');
         els.form.style.display = 'none';
@@ -1081,11 +1325,13 @@
         if (cfg.open) {
             els.state.className = 'cpchat-state';
             els.state.textContent = 'Online';
+            if (els.orbDot) { els.orbDot.className = 'cpchat-orb-dot'; }
             if (els.chatOffline) { els.chatOffline.style.display = 'none'; }
             if (els.offline) { els.offline.style.display = 'none'; }
         } else {
             els.state.className = 'cpchat-state off';
             els.state.textContent = (cfg.hours && cfg.hours.length) ? cfg.hours : 'Offline';
+            if (els.orbDot) { els.orbDot.className = 'cpchat-orb-dot off'; }
             if (els.chatOffline) { els.chatOffline.style.display = 'block'; }
             if (els.offline) { els.offline.style.display = 'block'; }
         }

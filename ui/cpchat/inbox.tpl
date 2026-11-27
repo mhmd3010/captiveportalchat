@@ -195,7 +195,18 @@
                             {else}
                                 <div class="{if $m.sender eq 'admin'}text-right{/if}" style="margin-bottom:10px;">
                                     <div class="well well-sm{if $m.sender eq 'admin'} cpchat-admin-bubble{/if}" style="display:inline-block;max-width:78%;text-align:left;margin:0;word-break:break-word;">
-                                        {$m.body|escape:'html'|nl2br}
+                                        {if !$m.attachment || $m.body neq $m.attachment.name}{$m.body|escape:'html'|nl2br}{/if}
+                                        {if $m.attachment}
+                                            <div style="margin-top:6px;">
+                                                {if $m.attachment.kind eq 'image'}
+                                                    <a href="{$m.attachment.url|escape:'html'}" target="_blank"><img src="{$m.attachment.url|escape:'html'}" style="max-width:220px;max-height:180px;border-radius:8px;display:block;"></a>
+                                                {elseif $m.attachment.kind eq 'audio'}
+                                                    <audio controls preload="metadata" src="{$m.attachment.url|escape:'html'}" style="max-width:240px;height:34px;"></audio>
+                                                {else}
+                                                    <a href="{$m.attachment.url|escape:'html'}" target="_blank" class="cp-btn cp-btn-sm" style="background:#111827;color:#fff !important;border-color:#111827;"><i class="fa fa-file-o"></i> {$m.attachment.name|escape:'html'} <i class="fa fa-download"></i></a>
+                                                {/if}
+                                            </div>
+                                        {/if}
                                         <small style="display:block;margin-top:4px;opacity:.75;">{if $m.sender eq 'admin' && $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}</small>
                                     </div>
                                 </div>
@@ -228,6 +239,8 @@
                         </span>
                     </div>
                     <div class="cp-composer-bar">
+                        <input type="file" id="cpchatAdminFile" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.mp3,.m4a,.wav,.ogg,.webm" style="display:none;">
+                        <button type="button" class="cp-btn" id="cpchatAdminAttach" title="{Lang::T('Attach file')}"{if !$active} disabled{/if}><i class="fa fa-paperclip"></i></button>
                         <textarea id="cpchatReply" class="form-control" rows="2"
                             placeholder="{Lang::T('Type your reply, Enter to send')}"{if !$active} disabled{/if}></textarea>
                         <button type="button" class="cp-btn cp-btn-primary" id="cpchatSendReply"{if !$active} disabled{/if}>
@@ -454,7 +467,8 @@
     }
 
     function setCompose(on) {
-        [replyEl, sendBtn, toggleBtn, assignEl, tagBtn, cannedEl, moreBtn].forEach(function (node) {
+        var attachBtn = document.getElementById('cpchatAdminAttach');
+        [replyEl, sendBtn, toggleBtn, assignEl, tagBtn, cannedEl, moreBtn, attachBtn].forEach(function (node) {
             if (node) {
                 node.disabled = !on;
             }
@@ -584,7 +598,18 @@
                 bubble.style.cssText = 'display:inline-block;max-width:75%;text-align:left;margin:0;word-break:break-word;'
                     + (isMe ? 'background-color:#337ab7;border-color:#2e6da4;color:#fff;' : '');
                 var tsStyle = isMe ? 'display:block;margin-top:2px;color:rgba(255,255,255,.85);' : 'display:block;margin-top:2px;color:#777;';
-                bubble.innerHTML = esc(m.body)
+                var attHtml = '';
+                if (m.attachment && m.attachment.url) {
+                    if (m.attachment.kind === 'image') {
+                        attHtml = '<div style="margin-top:6px;"><a href="' + esc(m.attachment.url) + '" target="_blank"><img src="' + esc(m.attachment.url) + '" style="max-width:220px;max-height:180px;border-radius:8px;display:block;"></a></div>';
+                    } else if (m.attachment.kind === 'audio') {
+                        attHtml = '<div style="margin-top:6px;"><audio controls preload="metadata" src="' + esc(m.attachment.url) + '" style="max-width:240px;height:34px;"></audio></div>';
+                    } else {
+                        attHtml = '<div style="margin-top:6px;"><a href="' + esc(m.attachment.url) + '" target="_blank" class="cp-btn cp-btn-sm" style="background:#111827;color:#fff !important;border-color:#111827;"><i class="fa fa-file-o"></i> ' + esc(m.attachment.name || 'Document') + ' <i class="fa fa-download"></i></a></div>';
+                    }
+                }
+                var bodyHtml = (!m.attachment || m.body !== m.attachment.name) ? esc(m.body) : '';
+                bubble.innerHTML = bodyHtml + attHtml
                     + '<small style="' + tsStyle + '">'
                     + (isMe && m.sender_name ? esc(m.sender_name) + ' · ' : '') + esc(m.time) + '</small>';
                 row.appendChild(bubble);
@@ -846,6 +871,37 @@
             modeNoteBtn.className = 'cp-mode-btn note active';
             sendBtn.innerHTML = '<i class="fa fa-sticky-note-o"></i> Save Note';
             replyEl.placeholder = 'Write an internal team note (hidden from customer)...';
+        };
+    }
+
+    var adminAttachBtn = document.getElementById('cpchatAdminAttach');
+    var adminFileIn = document.getElementById('cpchatAdminFile');
+    if (adminAttachBtn && adminFileIn && urls.upload) {
+        adminAttachBtn.onclick = function () { if (activeId) { adminFileIn.click(); } };
+        adminFileIn.onchange = function () {
+            if (!activeId || !adminFileIn.files || !adminFileIn.files[0]) { return; }
+            var f = adminFileIn.files[0];
+            adminFileIn.value = '';
+            if (f.size > 2 * 1024 * 1024) { toast('File must be under 2 MB', true); return; }
+            var fd = new FormData();
+            fd.append('id', activeId);
+            fd.append('file', f);
+            adminAttachBtn.disabled = true;
+            var x = new XMLHttpRequest();
+            x.open('POST', urls.upload, true);
+            x.onreadystatechange = function () {
+                adminAttachBtn.disabled = false;
+                if (x.readyState !== 4) { return; }
+                var res = null;
+                try { res = JSON.parse(x.responseText); } catch (e) { res = null; }
+                if (!res || !res.success) { toast((res && res.message) ? res.message : 'Upload failed', true); return; }
+                if (res.id > lastId) {
+                    appendMessages([{ id: res.id, sender: 'admin', body: res.body || '', attachment: res.attachment, time: (res.at || '').slice(11, 16), sender_name: '' }]);
+                    lastId = res.id;
+                }
+                loadListSoon();
+            };
+            x.send(fd);
         };
     }
 

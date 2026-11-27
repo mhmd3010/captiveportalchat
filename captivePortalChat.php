@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.2.1';
+$GLOBALS['captivePortalChat_version'] = '2.3.0';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -91,6 +91,10 @@ function cpchat_schema()
             sender_id MEDIUMINT DEFAULT 0,
             sender_name VARCHAR(60) DEFAULT '',
             body VARCHAR(2000) NOT NULL,
+            attachment_path VARCHAR(255) DEFAULT '',
+            attachment_name VARCHAR(120) DEFAULT '',
+            attachment_mime VARCHAR(80) DEFAULT '',
+            attachment_size INT DEFAULT 0,
             client_ref CHAR(36) DEFAULT NULL,
             is_read TINYINT(1) DEFAULT 0,
             created_at DATETIME NOT NULL,
@@ -183,6 +187,21 @@ function cpchat_migrate()
             } catch (Throwable $e) {
                 // a duplicate index is harmless
             }
+        }
+    }
+    $msgCols = [];
+    foreach ($db->query("SHOW COLUMNS FROM tbl_cpchat_messages")->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $msgCols[$row['Field']] = true;
+    }
+    $msgWanted = [
+        'attachment_path' => "ADD COLUMN attachment_path VARCHAR(255) DEFAULT ''",
+        'attachment_name' => "ADD COLUMN attachment_name VARCHAR(120) DEFAULT ''",
+        'attachment_mime' => "ADD COLUMN attachment_mime VARCHAR(80) DEFAULT ''",
+        'attachment_size' => "ADD COLUMN attachment_size INT DEFAULT 0",
+    ];
+    foreach ($msgWanted as $col => $sql) {
+        if (!isset($msgCols[$col])) {
+            $db->exec("ALTER TABLE tbl_cpchat_messages " . $sql);
         }
     }
 }
@@ -484,12 +503,25 @@ function cpchat_can_manage($admin)
 
 function cpchat_message_row($m)
 {
+    $att = null;
+    if (!empty($m['attachment_path'])) {
+        $mime = isset($m['attachment_mime']) ? (string) $m['attachment_mime'] : '';
+        $kind = (strpos($mime, 'image/') === 0) ? 'image' : ((strpos($mime, 'audio/') === 0) ? 'audio' : 'doc');
+        $att = [
+            'name' => isset($m['attachment_name']) ? (string) $m['attachment_name'] : 'file',
+            'mime' => $mime,
+            'size' => isset($m['attachment_size']) ? (int) $m['attachment_size'] : 0,
+            'kind' => $kind,
+            'url' => cpchat_url('cpchatFile', ['id' => (int) $m['id']]),
+        ];
+    }
     return [
         'id' => (int) $m['id'],
         'conversation_id' => (int) $m['conversation_id'],
         'sender' => $m['sender'],
         'sender_name' => $m['sender_name'],
         'body' => $m['body'],
+        'attachment' => $att,
         'ref' => $m['client_ref'],
         'at' => $m['created_at'],
         'time' => date('H:i', strtotime($m['created_at'])),
@@ -511,7 +543,7 @@ function cpchat_find_conversation($token = '', $id = 0)
     return null;
 }
 
-function cpchat_add_message($conversation_id, $sender, $body, $ref = '', $sender_id = 0, $sender_name = '')
+function cpchat_add_message($conversation_id, $sender, $body, $ref = '', $sender_id = 0, $sender_name = '', $att = null)
 {
     $now = date('Y-m-d H:i:s');
     if ($ref !== '') {
@@ -529,6 +561,10 @@ function cpchat_add_message($conversation_id, $sender, $body, $ref = '', $sender
     $m->sender_id = $sender_id;
     $m->sender_name = $sender_name;
     $m->body = $body;
+    $m->attachment_path = is_array($att) && !empty($att['path']) ? $att['path'] : '';
+    $m->attachment_name = is_array($att) && !empty($att['name']) ? $att['name'] : '';
+    $m->attachment_mime = is_array($att) && !empty($att['mime']) ? $att['mime'] : '';
+    $m->attachment_size = is_array($att) && !empty($att['size']) ? (int) $att['size'] : 0;
     $m->client_ref = ($ref !== '') ? $ref : null;
     $m->is_read = 0;
     $m->created_at = $now;
@@ -1203,6 +1239,8 @@ function cpchatWidgetJs()
                 'faqs' => cpchat_url('cpchatFaqs'),
                 'rate' => cpchat_url('cpchatRate'),
                 'typing' => cpchat_url('cpchatTyping'),
+                'upload' => cpchat_url('cpchatUpload'),
+                'file' => cpchat_url('cpchatFile'),
             ],
         ]) . ";"
     );
@@ -1654,6 +1692,223 @@ function cpchatTyping()
     cpchat_json(['success' => true]);
 }
 
+function cpchat_upload_dir()
+{
+    global $UPLOAD_PATH;
+    $base = !empty($UPLOAD_PATH) ? rtrim($UPLOAD_PATH, '/\\') : (rtrim($GLOBALS['root_path'], '/\\') . DIRECTORY_SEPARATOR . 'system' . DIRECTORY_SEPARATOR . 'uploads');
+    $dir = $base . DIRECTORY_SEPARATOR . 'cpchat';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0750, true);
+    }
+    $ht = $dir . DIRECTORY_SEPARATOR . '.htaccess';
+    if (!file_exists($ht)) {
+        @file_put_contents($ht, "Options -Indexes\n<IfModule mod_php.c>\nphp_flag engine off\n</IfModule>\nRequire all denied\n");
+    }
+    return $dir;
+}
+
+/** Strict magic-byte MIME validation + randomized filename storage */
+function cpchat_handle_upload($file)
+{
+    if (empty($file) || !isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK || empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return ['error' => Lang::T('No valid file uploaded')];
+    }
+    $size = (int) $file['size'];
+    if ($size <= 0 || $size > 2 * 1024 * 1024) {
+        return ['error' => Lang::T('File must be under 2 MB')];
+    }
+    $finfo = function_exists('finfo_open') ? finfo_open(FILEINFO_MIME_TYPE) : false;
+    $mime = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+    $mime = strtolower(trim(explode(';', (string) $mime)[0]));
+    // Strict allowlist: images, PDF/TXT docs, and audio voice notes (no SVG/HTML/PHP/ZIP/EXE)
+    $allow = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+        'text/plain' => 'txt',
+        'audio/webm' => 'webm',
+        'video/webm' => 'webm', // MediaRecorder audio-only webm often reports video/webm in finfo
+        'audio/ogg' => 'ogg',
+        'application/ogg' => 'ogg',
+        'audio/mp4' => 'm4a',
+        'audio/x-m4a' => 'm4a',
+        'audio/mpeg' => 'mp3',
+        'audio/wav' => 'wav',
+        'audio/x-wav' => 'wav',
+    ];
+    if (!isset($allow[$mime])) {
+        return ['error' => Lang::T('Unsupported file type. Allowed: JPG, PNG, WEBP, PDF, TXT, WEBM/OGG/MP3/M4A/WAV')];
+    }
+    if ($mime === 'video/webm') {
+        $mime = 'audio/webm';
+    } elseif ($mime === 'application/ogg') {
+        $mime = 'audio/ogg';
+    }
+    $ext = $allow[$mime];
+    $dir = cpchat_upload_dir();
+    if (!is_dir($dir) || !is_writable($dir)) {
+        return ['error' => Lang::T('Upload directory is not writable')];
+    }
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    $dest = $dir . DIRECTORY_SEPARATOR . $stored;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        return ['error' => Lang::T('Failed to store uploaded file')];
+    }
+    $orig = isset($file['name']) ? basename((string) $file['name']) : ('attachment.' . $ext);
+    $orig = preg_replace('/[^\w.\- ]+/', '_', $orig);
+    $orig = mb_substr(trim($orig), 0, 100);
+    if ($orig === '') {
+        $orig = 'attachment.' . $ext;
+    }
+    return [
+        'path' => $stored,
+        'name' => $orig,
+        'mime' => $mime,
+        'size' => $size,
+    ];
+}
+
+function cpchatUpload()
+{
+    $s = cpchat_settings();
+    if (!$s['enabled'] || !cpchat_ready()) {
+        cpchat_error('Chat is unavailable');
+    }
+    $token = isset($_POST['token']) ? preg_replace('/[^a-f0-9]/', '', strtolower($_POST['token'])) : '';
+    $ref = isset($_POST['ref']) ? preg_replace('/[^A-Za-z0-9\-]/', '', $_POST['ref']) : '';
+    $body = cpchat_clean_text(isset($_POST['body']) ? $_POST['body'] : '', $s['max_length']);
+    $conversation = $token !== '' ? cpchat_find_conversation($token) : null;
+    if (!$conversation) {
+        cpchat_error('Chat not found');
+    }
+    if ($conversation->status !== 'open') {
+        cpchat_error('This chat is closed');
+    }
+    $ip = $conversation->ip !== '' ? $conversation->ip : cpchat_client_ip();
+    if (cpchat_is_blocked($ip, $conversation->mac, $conversation->phone) !== null) {
+        cpchat_error('Chat is not available for this connection');
+    }
+    if (cpchat_ip_message_count($ip, 300) >= $s['spam_max_msgs']) {
+        cpchat_reject('ip_flood', 'upload', Lang::T('You are sending too fast, please wait a moment'));
+    }
+    $att = cpchat_handle_upload(isset($_FILES['file']) ? $_FILES['file'] : null);
+    if (isset($att['error'])) {
+        cpchat_error($att['error']);
+    }
+    if ($body === '') {
+        $body = (strpos($att['mime'], 'audio/') === 0) ? 'Voice message' : $att['name'];
+    }
+    $res = cpchat_add_message($conversation->id(), 'customer', $body, $ref, 0, $conversation->name, $att);
+    $conversation->unread_customer = 0;
+    $conversation->save();
+    $kind = (strpos($att['mime'], 'image/') === 0) ? 'image' : ((strpos($att['mime'], 'audio/') === 0) ? 'audio' : 'doc');
+    cpchat_json([
+        'success' => true,
+        'id' => $res['id'],
+        'at' => $res['created_at'],
+        'attachment' => [
+            'name' => $att['name'],
+            'mime' => $att['mime'],
+            'size' => $att['size'],
+            'kind' => $kind,
+            'url' => cpchat_url('cpchatFile', ['id' => $res['id']]),
+        ],
+    ]);
+}
+
+function cpchatAdminUpload()
+{
+    $admin = cpchat_require_admin();
+    $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+    $body = cpchat_clean_text(isset($_POST['body']) ? $_POST['body'] : '', cpchat_settings()['max_length']);
+    $conversation = cpchat_find_conversation('', $id);
+    if (!$conversation) {
+        cpchat_error('Conversation not found');
+    }
+    $att = cpchat_handle_upload(isset($_FILES['file']) ? $_FILES['file'] : null);
+    if (isset($att['error'])) {
+        cpchat_error($att['error']);
+    }
+    if ($body === '') {
+        $body = (strpos($att['mime'], 'audio/') === 0) ? 'Voice message' : $att['name'];
+    }
+    $name = $admin['fullname'] !== '' ? $admin['fullname'] : $admin['username'];
+    $res = cpchat_add_message($id, 'admin', $body, '', (int) $admin['id'], $name, $att);
+    if ((int) $conversation->assigned_to === 0) {
+        $conversation->assigned_to = (int) $admin['id'];
+        $conversation->assigned_at = date('Y-m-d H:i:s');
+    }
+    $conversation->unread_customer = 1;
+    $conversation->save();
+    $kind = (strpos($att['mime'], 'image/') === 0) ? 'image' : ((strpos($att['mime'], 'audio/') === 0) ? 'audio' : 'doc');
+    cpchat_json([
+        'success' => true,
+        'id' => $res['id'],
+        'at' => $res['created_at'],
+        'body' => $body,
+        'attachment' => [
+            'name' => $att['name'],
+            'mime' => $att['mime'],
+            'size' => $att['size'],
+            'kind' => $kind,
+            'url' => cpchat_url('cpchatFile', ['id' => $res['id']]),
+        ],
+    ]);
+}
+
+/** Securely serve an attachment only to the owning conversation token or an authenticated chat admin */
+function cpchatFile()
+{
+    $id = (int) _get('id', 0);
+    $token = preg_replace('/[^a-f0-9]/', '', strtolower((string) _get('token', '')));
+    if ($id <= 0) {
+        http_response_code(404);
+        exit('Not found');
+    }
+    $m = ORM::for_table('tbl_cpchat_messages')->find_one($id);
+    if (!$m || empty($m->attachment_path)) {
+        http_response_code(404);
+        exit('Not found');
+    }
+    $authorized = false;
+    if (!empty($_SESSION['aid'])) {
+        $admin = cpchat_admin();
+        if (cpchat_can_chat($admin)) {
+            $authorized = true;
+        }
+    }
+    if (!$authorized && $token !== '') {
+        $c = cpchat_find_conversation($token);
+        if ($c && (int) $c->id() === (int) $m->conversation_id && $m->sender !== 'note') {
+            $authorized = true;
+        }
+    }
+    if (!$authorized) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
+    $stored = basename((string) $m->attachment_path);
+    $file = cpchat_upload_dir() . DIRECTORY_SEPARATOR . $stored;
+    if (!is_file($file)) {
+        http_response_code(404);
+        exit('Not found');
+    }
+    $mime = !empty($m->attachment_mime) ? (string) $m->attachment_mime : 'application/octet-stream';
+    $name = !empty($m->attachment_name) ? basename((string) $m->attachment_name) : $stored;
+    $inline = (strpos($mime, 'image/') === 0 || strpos($mime, 'audio/') === 0);
+    header('X-Content-Type-Options: nosniff');
+    header('Content-Security-Policy: sandbox');
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . filesize($file));
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . str_replace('"', '', $name) . '"');
+    readfile($file);
+    exit;
+}
+
 function cpchatClose()
 {
     if (!cpchat_ready()) {
@@ -1979,6 +2234,8 @@ function cpchat_page_assets($page, $data = [])
                 'pdf' => cpchat_url('cpchatExportPdf'),
                 'typing' => cpchat_url('cpchatAdminTyping'),
                 'lookup' => cpchat_url('cpchatAdminCustomerLookup'),
+                'upload' => cpchat_url('cpchatAdminUpload'),
+                'file' => cpchat_url('cpchatFile'),
             ],
             'can_manage' => cpchat_can_manage(cpchat_admin()),
             'poll' => $s['poll_admin'],
