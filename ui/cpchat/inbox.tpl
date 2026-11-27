@@ -15,8 +15,10 @@
         </div>
         <div class="cp-head-actions">
             <a href="{$_url}plugin/captivePortalChat" class="cp-btn"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
-            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
-            <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="cp-btn"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
+            {if $can_manage}
+                <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
+                <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="cp-btn"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
+            {/if}
         </div>
     </div>
 
@@ -25,7 +27,7 @@
             <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
         </div>
     {/if}
-    {if $navbar_state.status neq 'installed'}
+    {if $can_manage && $navbar_state.status neq 'installed'}
         <div class="cp-banner cp-banner-warn">
             <span><i class="fa fa-bell-o"></i> {Lang::T('The navbar notification bell is not installed yet.')}</span>
             <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('Install it')}</a>
@@ -142,7 +144,7 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-right">
                                 <li><a class="dropdown-item" href="#" id="cpchatSpamBtn"><i class="fa fa-ban"></i> {Lang::T('Mark as spam')}</a></li>
-                                <li><a class="dropdown-item" href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>
+                                {if $can_manage}<li><a class="dropdown-item" href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>{/if}
                                 <li role="separator" class="divider dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" id="cpchatChatCsv"><i class="fa fa-file-text-o"></i> {Lang::T('Transcript CSV')}</a></li>
                                 <li><a class="dropdown-item" href="#" id="cpchatChatPdf"><i class="fa fa-file-pdf-o"></i> {Lang::T('Transcript PDF')}</a></li>
@@ -167,12 +169,34 @@
                     {/if}
                 </div>
 
+                <div id="cpchatCustomerBox" class="cp-customer-bar{if !$active_customer} is-guest{/if}"{if !$active} style="display:none;"{/if}>
+                    {if $active_customer}
+                        <div class="cp-customer-info">
+                            <span><i class="fa fa-id-card-o"></i> <b>{$active_customer.fullname|escape:'html'}</b> (<code>{$active_customer.username|escape:'html'}</code>)</span>
+                            <span>{Lang::T('Plan')}: <b>{$active_customer.plan|default:'-'|escape:'html'}</b></span>
+                            <span class="label {if $active_customer.status eq 'on'}label-success{else}label-default{/if}">{if $active_customer.status eq 'on'}{Lang::T('Active')}{else}{$active_customer.status|default:'-'|escape:'html'}{/if}</span>
+                            {if $active_customer.expiration neq ''}<span>{Lang::T('Expires')}: <b>{$active_customer.expiration|escape:'html'}</b></span>{/if}
+                        </div>
+                        <a href="{$active_customer.url|escape:'html'}" target="_blank" class="cp-btn cp-btn-sm"><i class="fa fa-external-link"></i> {Lang::T('Profile')}</a>
+                    {elseif $active}
+                        <span><i class="fa fa-user-secret"></i> {Lang::T('Guest / Unregistered visitor')}</span>
+                    {/if}
+                </div>
+
                 <div id="cpchatThread" class="cp-thread">
                     {if $active}
                         {foreach $thread as $m}
                             {if $m.sender eq 'system'}
                                 <div class="text-center" style="margin:6px 0;">
                                     <small style="color:var(--cpchat-text-muted);">{$m.body|escape:'html'|nl2br}</small>
+                                </div>
+                            {elseif $m.sender eq 'note'}
+                                <div class="text-right" style="margin-bottom:10px;">
+                                    <div class="cp-note-bubble">
+                                        <small style="display:block;font-weight:700;margin-bottom:2px;"><i class="fa fa-sticky-note-o"></i> {Lang::T('Internal Note')}</small>
+                                        {$m.body|escape:'html'|nl2br}
+                                        <small style="display:block;margin-top:4px;opacity:.75;">{if $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}</small>
+                                    </div>
                                 </div>
                             {else}
                                 <div class="{if $m.sender eq 'admin'}text-right{/if}" style="margin-bottom:10px;">
@@ -190,11 +214,17 @@
                         </div>
                     {/if}
                 </div>
+                <div id="cpchatTyping" class="cp-typing">Typing &hellip;</div>
 
                 <div class="cp-composer">
+                    <div id="cpchatSlashMenu" class="cp-slash-menu"></div>
                     <div class="cp-composer-top">
+                        <div class="cp-mode-group">
+                            <button type="button" class="cp-mode-btn active" id="cpchatModeReply">{Lang::T('Reply')}</button>
+                            <button type="button" class="cp-mode-btn note" id="cpchatModeNote"><i class="fa fa-sticky-note-o"></i> {Lang::T('Internal Note')}</button>
+                        </div>
                         <select id="cpchatCanned" class="form-control input-sm" style="width:220px;max-width:100%;" disabled>
-                            <option value="">{Lang::T('Canned replies')}…</option>
+                            <option value="">{Lang::T('Canned replies (/ to search)')}…</option>
                             {foreach $canned as $k}
                                 <option value="{$k.body|escape:'html'}">{$k.title|escape:'html'|truncate:48}</option>
                             {/foreach}
@@ -244,6 +274,15 @@
     var listView = document.getElementById('cpchatListView');
     var threadView = document.getElementById('cpchatThreadView');
     var backBtn = document.getElementById('cpchatBackBtn');
+    var customerBox = document.getElementById('cpchatCustomerBox');
+    var typingEl = document.getElementById('cpchatTyping');
+    var slashMenu = document.getElementById('cpchatSlashMenu');
+    var modeReplyBtn = document.getElementById('cpchatModeReply');
+    var modeNoteBtn = document.getElementById('cpchatModeNote');
+    var replyMode = 'admin';
+    var activeConv = null;
+    var activeCustomer = null;
+    var lastAdminTyping = 0;
     var activeId = parseInt('{/literal}{$active_id}{literal}', 10) || 0;
     var lastId = parseInt('{/literal}{$thread_last_id}{literal}', 10) || 0;
     var activeStatus = '{/literal}{if $active}{$active.status}{/if}{literal}';
@@ -411,6 +450,8 @@
                 return;
             }
             renderThreadShell(res.conversation);
+            renderCustomerBox(res.customer || null);
+            if (typingEl) { typingEl.style.display = res.customer_typing ? 'block' : 'none'; }
             threadEl.innerHTML = '';
             appendMessages(res.messages);
             lastId = res.last_id || 0;
@@ -452,6 +493,7 @@
     }
 
     function renderThreadShell(c) {
+        activeConv = c;
         activeStatus = c.status;
         activeTags = c.tags || [];
         titleEl.innerHTML = esc(c.name) + ' <small>' + esc(c.phone) + '</small>'
@@ -483,6 +525,46 @@
             + '<small class="text-muted"><i class="fa ' + icon + '"></i> ' + esc(label) + ':</small> <code>' + esc(value) + '</code></div>';
     }
 
+    function renderCustomerBox(cust) {
+        activeCustomer = cust;
+        if (!customerBox) { return; }
+        customerBox.style.display = '';
+        if (cust) {
+            customerBox.className = 'cp-customer-bar';
+            var stCls = cust.status === 'on' ? 'label-success' : 'label-default';
+            var stTxt = cust.status === 'on' ? 'Active' : (cust.status || '-');
+            customerBox.innerHTML = '<div class="cp-customer-info">'
+                + '<span><i class="fa fa-id-card-o"></i> <b>' + esc(cust.fullname || cust.username) + '</b> (<code>' + esc(cust.username) + '</code>)</span>'
+                + '<span>Plan: <b>' + esc(cust.plan || '-') + '</b></span>'
+                + '<span class="label ' + stCls + '">' + esc(stTxt) + '</span>'
+                + (cust.expiration ? '<span>Expires: <b>' + esc(cust.expiration) + '</b></span>' : '')
+                + '</div>'
+                + '<a href="' + esc(cust.url) + '" target="_blank" class="cp-btn cp-btn-sm"><i class="fa fa-external-link"></i> Profile</a>';
+            return;
+        }
+        customerBox.className = 'cp-customer-bar is-guest';
+        customerBox.innerHTML = '<span><i class="fa fa-user-secret"></i> Guest / Unregistered visitor</span>'
+            + '<div style="display:flex;gap:6px;align-items:center;">'
+            + '<input type="text" id="cpchatManualLookup" class="form-control input-sm" style="width:180px;height:28px;" placeholder="Lookup username / phone">'
+            + '<button type="button" id="cpchatManualLookupBtn" class="cp-btn cp-btn-sm">Find</button>'
+            + '</div>';
+        var btn = document.getElementById('cpchatManualLookupBtn');
+        var inp = document.getElementById('cpchatManualLookup');
+        if (btn && inp && urls.lookup) {
+            btn.onclick = function () {
+                var q = (inp.value || '').trim();
+                if (q.length < 2) { return; }
+                get(param(urls.lookup, 'q', q), function (res) {
+                    if (res && res.success && res.results && res.results.length) {
+                        renderCustomerBox(res.results[0]);
+                    } else {
+                        toast('No matching customer found', true);
+                    }
+                });
+            };
+        }
+    }
+
     function appendMessages(messages) {
         for (var i = 0; i < (messages || []).length; i++) {
             var m = messages[i];
@@ -491,6 +573,15 @@
                 row.className = 'text-center';
                 row.style.margin = '6px 0';
                 row.innerHTML = '<small class="text-muted">' + esc(m.body) + '</small>';
+            } else if (m.sender === 'note') {
+                row.className = 'text-right';
+                row.style.marginBottom = '8px';
+                var nb = document.createElement('div');
+                nb.className = 'cp-note-bubble';
+                nb.innerHTML = '<small style="display:block;font-weight:700;margin-bottom:2px;"><i class="fa fa-sticky-note-o"></i> Internal Note</small>'
+                    + esc(m.body)
+                    + '<small style="display:block;margin-top:4px;opacity:.75;">' + (m.sender_name ? esc(m.sender_name) + ' · ' : '') + esc(m.time) + '</small>';
+                row.appendChild(nb);
             } else {
                 var isMe = m.sender === 'admin';
                 row.className = isMe ? 'text-right' : '';
@@ -525,6 +616,9 @@
                         activeTags = res.conversation.tags || activeTags;
                         paintTags();
                     }
+                    if (typingEl) {
+                        typingEl.style.display = res.customer_typing ? 'block' : 'none';
+                    }
                 }
                 if (res && res.last_id) {
                     lastId = res.last_id;
@@ -539,7 +633,7 @@
         if (!text || !activeId) { return; }
         sendBtn.disabled = true;
         replyEl.disabled = true;
-        post(urls.send, { id: activeId, body: text }, function (res) {
+        post(urls.send, { id: activeId, body: text, type: replyMode }, function (res) {
             sendBtn.disabled = false;
             replyEl.disabled = false;
             if (!res || !res.success) {
@@ -550,7 +644,7 @@
             replyEl.value = '';
             autoGrow();
             if (res.id > lastId) {
-                appendMessages([{ id: res.id, sender: 'admin', body: text, time: (res.at || '').slice(11, 16), sender_name: '' }]);
+                appendMessages([{ id: res.id, sender: replyMode, body: text, time: (res.at || '').slice(11, 16), sender_name: '' }]);
                 lastId = res.id;
             }
             if (res.assigned_to && assignEl) {
@@ -734,14 +828,82 @@
     if (tagBtn) {
         tagBtn.onclick = editTags;
     }
+    function expandVars(text) {
+        var c = activeConv || {};
+        var cu = activeCustomer || {};
+        return String(text || '')
+            .replace(/\{\{name\}\}/g, c.name || cu.fullname || 'Customer')
+            .replace(/\{\{phone\}\}/g, c.phone || cu.phonenumber || '')
+            .replace(/\{\{username\}\}/g, c.username || cu.username || '')
+            .replace(/\{\{plan\}\}/g, cu.plan || '')
+            .replace(/\{\{expiry\}\}/g, cu.expiration || '');
+    }
+
+    if (modeReplyBtn && modeNoteBtn) {
+        modeReplyBtn.onclick = function () {
+            replyMode = 'admin';
+            modeReplyBtn.className = 'cp-mode-btn active';
+            modeNoteBtn.className = 'cp-mode-btn note';
+            sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Reply';
+            replyEl.placeholder = 'Type your reply, Enter to send (/ for canned)';
+        };
+        modeNoteBtn.onclick = function () {
+            replyMode = 'note';
+            modeReplyBtn.className = 'cp-mode-btn';
+            modeNoteBtn.className = 'cp-mode-btn note active';
+            sendBtn.innerHTML = '<i class="fa fa-sticky-note-o"></i> Save Note';
+            replyEl.placeholder = 'Write an internal team note (hidden from customer)...';
+        };
+    }
+
     if (cannedEl) {
         cannedEl.onchange = function () {
             if (!cannedEl.value) { return; }
-            replyEl.value = cannedEl.value;
+            replyEl.value = expandVars(cannedEl.value);
             cannedEl.value = '';
             if (typeof autoGrow === 'function') { autoGrow(); }
             replyEl.focus();
         };
+    }
+
+    if (replyEl && slashMenu) {
+        var cannedList = cfg.canned || [];
+        replyEl.addEventListener('input', function () {
+            if (activeId && replyMode === 'admin' && urls.typing) {
+                var now = Date.now();
+                if (now - lastAdminTyping > 3000) {
+                    lastAdminTyping = now;
+                    post(urls.typing, { id: activeId }, function () {});
+                }
+            }
+            var val = replyEl.value || '';
+            if (val.charAt(0) === '/' && cannedList.length) {
+                var q = val.slice(1).toLowerCase();
+                var hits = cannedList.filter(function (item) {
+                    return !q || (item.title || '').toLowerCase().indexOf(q) !== -1 || (item.body || '').toLowerCase().indexOf(q) !== -1;
+                }).slice(0, 6);
+                if (hits.length) {
+                    slashMenu.innerHTML = hits.map(function (h, idx) {
+                        return '<div class="cp-slash-item" data-idx="' + idx + '"><b>' + esc(h.title) + '</b><small>' + esc(h.body) + '</small></div>';
+                    }).join('');
+                    slashMenu.style.display = 'block';
+                    var items = slashMenu.querySelectorAll('.cp-slash-item');
+                    for (var i = 0; i < items.length; i++) {
+                        items[i].onclick = function () {
+                            var h = hits[parseInt(this.getAttribute('data-idx'), 10)];
+                            if (h) {
+                                replyEl.value = expandVars(h.body);
+                                slashMenu.style.display = 'none';
+                                if (typeof autoGrow === 'function') { autoGrow(); }
+                                replyEl.focus();
+                            }
+                        };
+                    }
+                    return;
+                }
+            }
+            slashMenu.style.display = 'none';
+        });
     }
 
     function bindMenuAction(id, fn) {

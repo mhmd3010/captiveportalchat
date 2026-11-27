@@ -196,7 +196,20 @@
             '.cpchat-state.off{background:#dc2626}',
             '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:9px 11px;margin:0 0 12px}',
             '.cpchat-offline b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}',
-            '.cpchat-brand{font-size:10px;color:#94a3b8;text-align:center;padding:5px 0 7px;background:#fff}'
+            '.cpchat-brand{font-size:10px;color:#94a3b8;text-align:center;padding:5px 0 7px;background:#fff}',
+            '.cpchat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0}',
+            '.cpchat-chip{background:#fff;border:1px solid #cbd5e1;color:#1e293b;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:500;cursor:pointer;line-height:1.3;transition:all .15s}',
+            '.cpchat-chip:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}',
+            '.cpchat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin:6px 0;font-size:12.5px;color:#1e293b;box-shadow:0 1px 3px rgba(15,23,42,.05)}',
+            '.cpchat-card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:#0f172a;display:flex;justify-content:space-between;align-items:center}',
+            '.cpchat-plan{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #f1f5f9}',
+            '.cpchat-plan:first-of-type{border-top:0}',
+            '.cpchat-plan b{color:#2563eb;font-size:13px}',
+            '.cpchat-acct-in{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12.5px;margin-bottom:6px;font-family:inherit}',
+            '.cpchat-acct-btn{width:100%;border:0;border-radius:8px;padding:8px;background:#2563eb;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}',
+            '.cpchat-typing{padding:4px 14px;font-size:12px;color:#64748b;font-style:italic;background:#f8fafc;display:none}',
+            '.cpchat-rate{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:#f0fdf4;border-top:1px solid #bbf7d0;font-size:12.5px;color:#166534}',
+            '.cpchat-rate button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}'
         ].join('');
         var s = el('style');
         s.id = 'cpchat-style';
@@ -266,6 +279,190 @@
         }
         els.note.textContent = text;
         els.note.className = 'cpchat-note on';
+    }
+
+    function addBotCard(title, builder) {
+        var box = el('div', 'cpchat-card');
+        var h = el('h4', '', '');
+        h.appendChild(el('span', '', title));
+        var x = el('span', '', '\u00d7');
+        x.style.cursor = 'pointer';
+        x.style.color = '#94a3b8';
+        x.onclick = function () {
+            if (box.parentNode) { box.parentNode.removeChild(box); }
+        };
+        h.appendChild(x);
+        box.appendChild(h);
+        builder(box);
+        var target = (els.chat.style.display !== 'none') ? els.body : els.helperArea;
+        target.innerHTML = (target === els.helperArea) ? '' : target.innerHTML;
+        target.appendChild(box);
+        if (target === els.body) { scrollBottom(); }
+    }
+
+    function openPlans() {
+        if (!urls.plans) { return; }
+        addBotCard('Hotspot Plans & Prices', function (box) {
+            var loading = el('div', '', 'Loading plans\u2026');
+            loading.style.color = '#64748b';
+            box.appendChild(loading);
+            post(urls.plans, {}, function (res) {
+                box.removeChild(loading);
+                if (!res || !res.success || !res.plans || !res.plans.length) {
+                    box.appendChild(el('div', '', 'No active hotspot plans found.'));
+                    return;
+                }
+                for (var i = 0; i < res.plans.length; i++) {
+                    var p = res.plans[i];
+                    var row = el('div', 'cpchat-plan');
+                    var left = el('div', '', '');
+                    left.appendChild(el('div', '', p.name));
+                    var sub = el('div', '', p.validity || '');
+                    sub.style.fontSize = '11px';
+                    sub.style.color = '#64748b';
+                    left.appendChild(sub);
+                    row.appendChild(left);
+                    row.appendChild(el('b', '', p.price));
+                    box.appendChild(row);
+                }
+            });
+        });
+    }
+
+    function openAccountCheck() {
+        if (!urls.account) { return; }
+        addBotCard('Check My Account', function (box) {
+            var u = el('input', 'cpchat-acct-in');
+            u.type = 'text';
+            u.placeholder = 'Hotspot username';
+            u.value = (pageMeta.username && !/^\$\(/.test(pageMeta.username)) ? pageMeta.username : '';
+            var p = el('input', 'cpchat-acct-in');
+            p.type = 'password';
+            p.placeholder = 'Password';
+            var msg = el('div', '', '');
+            msg.style.fontSize = '12px';
+            msg.style.marginBottom = '6px';
+            var btn = el('button', 'cpchat-acct-btn', 'Check Status');
+            btn.type = 'button';
+            btn.onclick = function () {
+                msg.style.color = '#dc2626';
+                msg.textContent = '';
+                btn.disabled = true;
+                post(urls.account, { username: u.value, password: p.value }, function (res) {
+                    btn.disabled = false;
+                    if (!res || !res.success || !res.account) {
+                        msg.textContent = (res && res.message) ? res.message : 'Unable to verify account';
+                        return;
+                    }
+                    var a = res.account;
+                    box.innerHTML = '<h4><span>' + a.username + '</span></h4>'
+                        + '<div class="cpchat-plan"><span>Plan</span><b>' + a.plan + '</b></div>'
+                        + '<div class="cpchat-plan"><span>Status</span><b>' + a.status + '</b></div>'
+                        + '<div class="cpchat-plan"><span>Expires</span><span>' + a.expiration + '</span></div>'
+                        + '<div class="cpchat-plan"><span>Balance</span><span>' + a.balance + '</span></div>';
+                });
+            };
+            box.appendChild(u);
+            box.appendChild(p);
+            box.appendChild(msg);
+            box.appendChild(btn);
+        });
+    }
+
+    function showFaqAnswer(f) {
+        addBotCard(f.q, function (box) {
+            var ans = el('div', '', f.a);
+            ans.style.lineHeight = '1.45';
+            ans.style.marginBottom = '8px';
+            box.appendChild(ans);
+            if (els.chat.style.display === 'none') {
+                var tip = el('div', '', 'Need more help? Fill in your name & phone below to chat with support.');
+                tip.style.fontSize = '11.5px';
+                tip.style.color = '#64748b';
+                box.appendChild(tip);
+            }
+        });
+    }
+
+    function openFaqs() {
+        var list = cfg.faqs || [];
+        if (!list.length) { return; }
+        addBotCard('Common Questions', function (box) {
+            var wrap = el('div', '');
+            wrap.style.display = 'flex';
+            wrap.style.flexWrap = 'wrap';
+            wrap.style.gap = '6px';
+            for (var i = 0; i < list.length; i++) {
+                (function (f) {
+                    var c = el('button', 'cpchat-chip', f.q);
+                    c.type = 'button';
+                    c.onclick = function () { showFaqAnswer(f); };
+                    wrap.appendChild(c);
+                })(list[i]);
+            }
+            box.appendChild(wrap);
+        });
+    }
+
+    function buildQuickBar(parent) {
+        if (!cfg.plansEnabled && !cfg.accountCheckEnabled && !(cfg.faqEnabled && (cfg.faqs || []).length)) {
+            return null;
+        }
+        var bar = el('div', 'cpchat-quick');
+        if (cfg.plansEnabled) {
+            var b1 = el('button', 'cpchat-chip', 'Plans & Prices');
+            b1.type = 'button';
+            b1.onclick = openPlans;
+            bar.appendChild(b1);
+        }
+        if (cfg.accountCheckEnabled) {
+            var b2 = el('button', 'cpchat-chip', 'My Account');
+            b2.type = 'button';
+            b2.onclick = openAccountCheck;
+            bar.appendChild(b2);
+        }
+        if (cfg.faqEnabled && (cfg.faqs || []).length) {
+            var b3 = el('button', 'cpchat-chip', 'FAQs');
+            b3.type = 'button';
+            b3.onclick = openFaqs;
+            bar.appendChild(b3);
+        }
+        parent.appendChild(bar);
+        return bar;
+    }
+
+    function matchFaq(text) {
+        var list = cfg.faqs || [];
+        if (!cfg.faqEnabled || !list.length) { return; }
+        var low = text.toLowerCase();
+        for (var i = 0; i < list.length; i++) {
+            var kws = (list[i].kw || '').split(',');
+            for (var k = 0; k < kws.length; k++) {
+                var w = kws[k].replace(/^\s+|\s+$/g, '').toLowerCase();
+                if (w.length >= 3 && low.indexOf(w) !== -1) {
+                    showFaqAnswer(list[i]);
+                    return;
+                }
+            }
+        }
+    }
+
+    var lastTypingPing = 0;
+    function pingTyping() {
+        if (!state.token || !urls.typing || state.status !== 'open') { return; }
+        var now = Date.now();
+        if (now - lastTypingPing < 3000) { return; }
+        lastTypingPing = now;
+        post(urls.typing, { token: state.token }, function () {});
+    }
+
+    function sendRating(val) {
+        if (!state.token || !urls.rate) { return; }
+        post(urls.rate, { token: state.token, rating: val }, function (res) {
+            if (res && res.success && els.rateBar) {
+                els.rateBar.innerHTML = '<span>Thanks for your feedback!</span>';
+            }
+        });
     }
 
     function showForm(message) {
@@ -475,10 +672,19 @@
                 cfg.open = res.open;
                 paintState();
             }
+            if (els.typing) {
+                els.typing.style.display = res.typing ? 'block' : 'none';
+            }
             if (res.status === 'closed') {
                 setBadge(0);
+                if (els.typing) { els.typing.style.display = 'none'; }
                 note('This chat has been closed. You can start a new one.');
                 els.endBtn.style.display = 'inline-block';
+                if (els.rateBar && !res.rating) {
+                    els.rateBar.style.display = 'flex';
+                }
+            } else if (els.rateBar) {
+                els.rateBar.style.display = 'none';
             }
         });
     }
@@ -539,6 +745,7 @@
         queue.push({ ref: ref, body: text });
         saveQueue();
         send(text, ref);
+        matchFaq(text);
     }
 
     function flushQueue() {
@@ -671,6 +878,12 @@
             }
             flushQueue();
             tick();
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden && state.token) {
+                    poll(false);
+                    tick();
+                }
+            });
         }, wait);
     }
 
@@ -708,13 +921,31 @@
         head.appendChild(closeBtn);
 
         els.body = el('div', 'cpchat-body');
+        els.typing = el('div', 'cpchat-typing', 'Typing \u2026');
+        els.rateBar = el('div', 'cpchat-rate');
+        els.rateBar.appendChild(el('span', '', 'Was this helpful?'));
+        var rateBtns = el('div', '');
+        rateBtns.style.display = 'flex';
+        rateBtns.style.gap = '6px';
+        var rYes = el('button', '', '\ud83d\udc4d Yes');
+        rYes.type = 'button';
+        rYes.onclick = function () { sendRating(5); };
+        var rNo = el('button', '', '\ud83d\udc4e No');
+        rNo.type = 'button';
+        rNo.onclick = function () { sendRating(1); };
+        rateBtns.appendChild(rYes);
+        rateBtns.appendChild(rNo);
+        els.rateBar.appendChild(rateBtns);
         els.note = el('div', 'cpchat-note', '');
 
         els.input = document.createElement('textarea');
-        els.input.placeholder = 'Type your message…';
+        els.input.placeholder = 'Type your message\u2026';
         els.input.setAttribute('rows', '1');
         els.input.maxLength = maxLength;
-        els.input.oninput = autosize;
+        els.input.oninput = function () {
+            autosize();
+            pingTyping();
+        };
         els.input.onkeydown = function (ev) {
             if (ev && ev.key === 'Enter' && !ev.shiftKey) {
                 ev.preventDefault();
@@ -733,13 +964,19 @@
         els.chat.style.flex = '1';
         els.chat.style.flexDirection = 'column';
         els.chat.style.minHeight = '0';
+        buildQuickBar(els.chat);
         els.chat.appendChild(els.body);
+        els.chat.appendChild(els.typing);
+        els.chat.appendChild(els.rateBar);
         els.chat.appendChild(els.note);
         els.chat.appendChild(foot);
 
         els.form = el('div', 'cpchat-form');
         els.form.style.display = 'none';
         els.form.appendChild(el('div', 'cpchat-sys', cfg.welcome || ''));
+        buildQuickBar(els.form);
+        els.helperArea = el('div', '');
+        els.form.appendChild(els.helperArea);
         els.offline = el('div', 'cpchat-offline', '');
         els.offline.appendChild(el('b', '', (cfg.hours && cfg.hours.length) ? cfg.hours : 'Offline'));
         els.offline.appendChild(document.createTextNode(cfg.awayMessage || 'We are offline right now, leave your question and we will reply as soon as we are back.'));
@@ -808,6 +1045,12 @@
                 setBadge(0);
             }
             tick();
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden && state.token) {
+                    poll(false);
+                    tick();
+                }
+            });
         }
         if (document.body) {
             paintState();

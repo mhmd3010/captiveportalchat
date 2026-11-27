@@ -1,5 +1,5 @@
 <?php
-$cpchatRoles = ['SuperAdmin', 'Admin'];
+$cpchatRoles = ['SuperAdmin', 'Admin', 'Support', 'Agent'];
 // one sidebar entry only: Dashboard is the landing page, Inbox and Settings are reached
 // from its breadcrumb + header buttons (the routes themselves still exist)
 register_menu("Captive Portal Chat", true, "captivePortalChat", 'AFTER_MESSAGE', 'ion ion-chatbubbles', '', 'success', $cpchatRoles);
@@ -27,7 +27,7 @@ unset($cpchatRoles);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.1.4';
+$GLOBALS['captivePortalChat_version'] = '2.2.0';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -59,6 +59,8 @@ function cpchat_schema()
             last_message_id MEDIUMINT DEFAULT 0,
             last_message_at DATETIME NULL,
             customer_seen_id MEDIUMINT DEFAULT 0,
+            customer_typing_at DATETIME NULL,
+            admin_typing_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             PRIMARY KEY (id),
@@ -116,6 +118,17 @@ function cpchat_schema()
             KEY cpchat_spam_time (created_at),
             KEY cpchat_spam_ip (ip)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+        'tbl_cpchat_faqs' => "CREATE TABLE IF NOT EXISTS tbl_cpchat_faqs (
+            id MEDIUMINT NOT NULL AUTO_INCREMENT,
+            question VARCHAR(160) NOT NULL,
+            answer VARCHAR(1500) NOT NULL,
+            keywords VARCHAR(255) DEFAULT '',
+            sort INT DEFAULT 0,
+            enabled TINYINT(1) DEFAULT 1,
+            created_at DATETIME NOT NULL,
+            PRIMARY KEY (id),
+            KEY cpchat_faq_enabled (enabled, sort)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ];
 }
 
@@ -131,6 +144,8 @@ function cpchat_migrate()
         'rating' => "ADD COLUMN rating TINYINT DEFAULT 0",
         'is_spam' => "ADD COLUMN is_spam TINYINT(1) DEFAULT 0",
         'first_reply_at' => "ADD COLUMN first_reply_at DATETIME NULL",
+        'customer_typing_at' => "ADD COLUMN customer_typing_at DATETIME NULL",
+        'admin_typing_at' => "ADD COLUMN admin_typing_at DATETIME NULL",
     ];
     $indexes = [
         'cpchat_ip' => "ADD KEY cpchat_ip (ip)",
@@ -186,6 +201,7 @@ function cpchat_install()
             }
         }
         cpchat_migrate();
+        cpchat_seed_faqs();
         cpchat_save_setting('cpchat_schema_ver', $ver);
         $result = true;
     } catch (Throwable $e) {
@@ -253,6 +269,11 @@ function cpchat_settings()
         'spam_cooldown' => max(0, (int) cpchat_config('spam_cooldown', 15)),
         'spam_auto_block' => cpchat_config_yes('spam_auto_block', true),
         'spam_block_hours' => max(1, (int) cpchat_config('spam_block_hours', 24)),
+        // self-service & retention
+        'faq_enabled' => cpchat_config_yes('faq_enabled', true),
+        'plans_enabled' => cpchat_config_yes('plans_enabled', true),
+        'account_check_enabled' => cpchat_config_yes('account_check_enabled', true),
+        'retention_days' => max(0, (int) cpchat_config('retention_days', 0)),
         'version' => $captivePortalChat_version,
     ];
     if ($s['title'] === '') {
@@ -435,9 +456,14 @@ function cpchat_admin()
     return $admin;
 }
 
+function cpchat_can_chat($admin)
+{
+    return $admin && in_array($admin['user_type'], ['SuperAdmin', 'Admin', 'Support', 'Agent'], true);
+}
+
 function cpchat_can_manage($admin)
 {
-    return $admin && in_array($admin['user_type'], ['SuperAdmin', 'Admin']);
+    return $admin && in_array($admin['user_type'], ['SuperAdmin', 'Admin'], true);
 }
 
 function cpchat_message_row($m)
@@ -494,13 +520,17 @@ function cpchat_add_message($conversation_id, $sender, $body, $ref = '', $sender
 
     $c = ORM::for_table('tbl_cpchat_conversations')->find_one($conversation_id);
     if ($c) {
-        $c->last_message_id = $m->id();
-        $c->last_message_at = $now;
+        if ($sender !== 'note') {
+            $c->last_message_id = $m->id();
+            $c->last_message_at = $now;
+        }
         $c->updated_at = $now;
         if ($sender === 'customer') {
             $c->unread_admin = (int) $c->unread_admin + 1;
-        } else {
+            $c->customer_typing_at = null;
+        } elseif ($sender === 'admin') {
             $c->unread_customer = (int) $c->unread_customer + 1;
+            $c->admin_typing_at = null;
         }
         if ($sender === 'admin' && empty($c->first_reply_at)) {
             $c->first_reply_at = $now;
@@ -745,6 +775,144 @@ function cpchat_canned_delete($id)
         return true;
     }
     return false;
+}
+
+function cpchat_faq_list($onlyEnabled = false)
+{
+    $q = ORM::for_table('tbl_cpchat_faqs');
+    if ($onlyEnabled) {
+        $q->where('enabled', 1);
+    }
+    $rows = $q->order_by_asc('sort')->order_by_asc('id')->find_array();
+    return is_array($rows) ? $rows : [];
+}
+
+function cpchat_faq_save($id, $question, $answer, $keywords = '', $enabled = 1)
+{
+    $question = cpchat_clean_text($question, 160);
+    $answer = cpchat_clean_text($answer, 1500);
+    $keywords = cpchat_clean_text($keywords, 255);
+    if ($question === '' || $answer === '') {
+        return false;
+    }
+    $row = $id > 0 ? ORM::for_table('tbl_cpchat_faqs')->find_one($id) : null;
+    if (!$row) {
+        $row = ORM::for_table('tbl_cpchat_faqs')->create();
+        $row->created_at = date('Y-m-d H:i:s');
+        $row->sort = (int) ORM::for_table('tbl_cpchat_faqs')->count() + 1;
+    }
+    $row->question = $question;
+    $row->answer = $answer;
+    $row->keywords = $keywords;
+    $row->enabled = $enabled ? 1 : 0;
+    $row->save();
+    return true;
+}
+
+function cpchat_faq_delete($id)
+{
+    $row = ORM::for_table('tbl_cpchat_faqs')->find_one((int) $id);
+    if ($row) {
+        $row->delete();
+    }
+}
+
+function cpchat_seed_faqs()
+{
+    try {
+        $count = (int) ORM::for_table('tbl_cpchat_faqs')->count();
+        if ($count > 0) {
+            return;
+        }
+        $defaults = [
+            ['Login page not opening?', 'Try opening http://1.1.1.1 or http://neverssl.com in your browser, or forget and reconnect to the Wi-Fi network.', 'login,portal,open,load,redirect,page'],
+            ['Voucher code not working?', 'Double-check uppercase/lowercase letters and remove extra spaces. If it still fails, share your voucher code here and our team will check it.', 'voucher,code,pin,invalid,used'],
+            ['Connected, but no internet / slow?', 'Toggle Wi-Fi off and on once, or check if your plan has expired. You can tap "My Account" below to verify your status.', 'slow,no internet,disconnect,buffering,speed'],
+            ['How to view plans & prices?', 'Tap "Plans & Prices" in the quick menu to see all active Hotspot packages and prices.', 'plan,plans,price,prices,package,packages,buy,renew'],
+            ['Forgot username or password?', 'Send us your registered phone number or full name here and a support agent will help recover your account.', 'forgot,password,username,reset,login'],
+        ];
+        foreach ($defaults as $i => $d) {
+            $row = ORM::for_table('tbl_cpchat_faqs')->create();
+            $row->question = $d[0];
+            $row->answer = $d[1];
+            $row->keywords = $d[2];
+            $row->sort = $i + 1;
+            $row->enabled = 1;
+            $row->created_at = date('Y-m-d H:i:s');
+            $row->save();
+        }
+    } catch (Throwable $e) {
+        // ignore if table not ready
+    }
+}
+
+/** Auto-match conversation visitor against PHPNuxBill customers & recharges */
+function cpchat_customer_match($c)
+{
+    if (!is_array($c)) {
+        return null;
+    }
+    $customer = null;
+    $username = isset($c['username']) ? trim((string) $c['username']) : '';
+    $phone = isset($c['phone']) ? trim((string) $c['phone']) : '';
+    if ($username !== '') {
+        $customer = ORM::for_table('tbl_customers')->where('username', $username)->find_one();
+    }
+    if (!$customer && $phone !== '') {
+        $customer = ORM::for_table('tbl_customers')->where('phonenumber', $phone)->find_one();
+        if (!$customer) {
+            $digits = preg_replace('/\D/', '', $phone);
+            if (strlen($digits) >= 8) {
+                $tail = substr($digits, -8);
+                $customer = ORM::for_table('tbl_customers')->where_like('phonenumber', '%' . $tail)->find_one();
+            }
+        }
+    }
+    if (!$customer) {
+        return null;
+    }
+    $recharge = ORM::for_table('tbl_user_recharges')
+        ->where('customer_id', $customer->id())
+        ->order_by_desc('id')
+        ->find_one();
+    return [
+        'id' => (int) $customer->id(),
+        'fullname' => (string) $customer->fullname,
+        'username' => (string) $customer->username,
+        'phonenumber' => (string) $customer->phonenumber,
+        'balance' => (string) $customer->balance,
+        'plan' => $recharge ? (string) $recharge->namebp : '',
+        'status' => $recharge ? (string) $recharge->status : '',
+        'expiration' => $recharge ? trim($recharge->expiration . ' ' . $recharge->time) : '',
+        'router' => $recharge ? (string) $recharge->routers : '',
+        'url' => U . 'customers/view/' . (int) $customer->id(),
+    ];
+}
+
+/** Daily retention cleanup for 50K+ scale */
+function cpchat_cleanup_old()
+{
+    global $config;
+    $days = max(0, (int) cpchat_config('retention_days', 0));
+    if ($days <= 0) {
+        return;
+    }
+    $today = date('Y-m-d');
+    if (!empty($config['cpchat_last_cleanup']) && $config['cpchat_last_cleanup'] === $today) {
+        return;
+    }
+    cpchat_save_setting('cpchat_last_cleanup', $today);
+    $cutoff = date('Y-m-d H:i:s', time() - ($days * 86400));
+    try {
+        ORM::raw_execute(
+            "DELETE m FROM tbl_cpchat_messages m JOIN tbl_cpchat_conversations c ON c.id = m.conversation_id WHERE c.status = 'closed' AND c.updated_at < ?",
+            [$cutoff]
+        );
+        ORM::raw_execute("DELETE FROM tbl_cpchat_conversations WHERE status = 'closed' AND updated_at < ?", [$cutoff]);
+        ORM::raw_execute("DELETE FROM tbl_cpchat_spamlog WHERE created_at < ?", [$cutoff]);
+    } catch (Throwable $e) {
+        // ignore cleanup errors
+    }
 }
 
 /* ------------------------------------------------------------------ *
@@ -996,12 +1164,28 @@ function cpchatWidgetJs()
             'open' => $open,
             'awayMessage' => $s['away_message'],
             'hours' => cpchat_hours_label(),
+            'faqEnabled' => $s['faq_enabled'],
+            'plansEnabled' => $s['plans_enabled'],
+            'accountCheckEnabled' => $s['account_check_enabled'],
+            'faqs' => $s['faq_enabled'] ? array_map(function ($f) {
+                return [
+                    'id' => (int) $f['id'],
+                    'q' => $f['question'],
+                    'a' => $f['answer'],
+                    'kw' => $f['keywords'],
+                ];
+            }, cpchat_faq_list(true)) : [],
             'urls' => [
                 'start' => cpchat_url('cpchatStart'),
                 'send' => cpchat_url('cpchatSend'),
                 'poll' => cpchat_url('cpchatPoll'),
                 'close' => cpchat_url('cpchatClose'),
                 'captcha' => cpchat_url('cpchatCaptcha'),
+                'plans' => cpchat_url('cpchatPlans'),
+                'account' => cpchat_url('cpchatAccount'),
+                'faqs' => cpchat_url('cpchatFaqs'),
+                'rate' => cpchat_url('cpchatRate'),
+                'typing' => cpchat_url('cpchatTyping'),
             ],
         ]) . ";"
     );
@@ -1152,6 +1336,7 @@ function cpchatStart()
 
     $rows = ORM::for_table('tbl_cpchat_messages')
         ->where('conversation_id', $conversation->id())
+        ->where_not_equal('sender', 'note')
         ->order_by_desc('id')->limit(50)->find_array();
     $messages = array_reverse(cpchat_map_messages($rows));
     $lastId = empty($messages) ? 0 : $messages[count($messages) - 1]['id'];
@@ -1284,6 +1469,7 @@ function cpchatPoll()
     }
     $rows = ORM::for_table('tbl_cpchat_messages')
         ->where('conversation_id', $conversation->id())
+        ->where_not_equal('sender', 'note')
         ->where_gt('id', $since)
         ->order_by_asc('id')->limit(100)->find_array();
     $messages = cpchat_map_messages($rows);
@@ -1311,13 +1497,144 @@ function cpchatPoll()
         $conversation->save();
     }
 
+    $typing = !empty($conversation->admin_typing_at) && strtotime($conversation->admin_typing_at) >= (time() - 5);
     cpchat_json([
         'success' => true,
         'status' => $conversation->status,
         'messages' => $messages,
         'open' => cpchat_is_open(),
+        'typing' => $typing,
+        'rating' => (int) $conversation->rating,
         'last_id' => empty($messages) ? $since : $messages[count($messages) - 1]['id'],
     ]);
+}
+
+function cpchatPlans()
+{
+    global $config;
+    $s = cpchat_settings();
+    if (!$s['enabled'] || !$s['plans_enabled']) {
+        cpchat_error('Plans are unavailable');
+    }
+    $plans = ORM::for_table('tbl_plans')
+        ->select_many('id', 'name_plan', 'price', 'validity', 'validity_unit', 'typebp', 'routers')
+        ->where('enabled', 1)
+        ->where('type', 'Hotspot')
+        ->order_by_asc('price')
+        ->limit(30)
+        ->find_array();
+    $cur = isset($config['currency_code']) ? $config['currency_code'] : '';
+    $out = [];
+    foreach ((array) $plans as $p) {
+        $out[] = [
+            'id' => (int) $p['id'],
+            'name' => $p['name_plan'],
+            'price' => trim($cur . ' ' . number_format((float) $p['price'], 0)),
+            'validity' => trim($p['validity'] . ' ' . $p['validity_unit']),
+            'typebp' => $p['typebp'],
+        ];
+    }
+    cpchat_json(['success' => true, 'plans' => $out]);
+}
+
+function cpchatAccount()
+{
+    global $config;
+    $s = cpchat_settings();
+    if (!$s['enabled'] || !$s['account_check_enabled']) {
+        cpchat_error('Account lookup is disabled');
+    }
+    $ip = cpchat_client_ip();
+    $blocked = cpchat_is_blocked($ip);
+    if ($blocked !== null) {
+        cpchat_error(Lang::T('Too many attempts. Please try again later.'));
+    }
+    // Rate-limit failed lookups (max 5 in 5 minutes per IP)
+    $fails = (int) ORM::for_table('tbl_cpchat_spamlog')
+        ->where('ip', $ip)
+        ->where('reason', 'account_fail')
+        ->where_gte('created_at', date('Y-m-d H:i:s', time() - 300))
+        ->count();
+    if ($fails >= 5) {
+        cpchat_error(Lang::T('Too many failed attempts. Please wait 5 minutes.'));
+    }
+    $b = cpchat_post_body();
+    $username = cpchat_meta_value(isset($b['username']) ? $b['username'] : '', 60);
+    $password = isset($b['password']) ? (string) $b['password'] : '';
+    if ($username === '' || $password === '') {
+        cpchat_error(Lang::T('Enter both your username and password'));
+    }
+    $user = ORM::for_table('tbl_customers')->where('username', $username)->find_one();
+    if (!$user || !Password::_uverify($password, $user['password'])) {
+        cpchat_spam_log('account_fail', $username, $ip, '');
+        cpchat_error(Lang::T('Invalid username or password'));
+    }
+    $recharge = ORM::for_table('tbl_user_recharges')
+        ->where('customer_id', $user->id())
+        ->order_by_desc('id')
+        ->find_one();
+    $cur = isset($config['currency_code']) ? $config['currency_code'] : '';
+    cpchat_json([
+        'success' => true,
+        'account' => [
+            'fullname' => (string) $user->fullname,
+            'username' => (string) $user->username,
+            'balance' => trim($cur . ' ' . number_format((float) $user->balance, 0)),
+            'plan' => $recharge ? (string) $recharge->namebp : Lang::T('No active plan'),
+            'status' => $recharge ? (string) $recharge->status : 'none',
+            'expiration' => $recharge ? trim($recharge->expiration . ' ' . $recharge->time) : '-',
+        ],
+    ]);
+}
+
+function cpchatFaqs()
+{
+    $s = cpchat_settings();
+    if (!$s['enabled'] || !$s['faq_enabled'] || !cpchat_ready()) {
+        cpchat_json(['success' => true, 'faqs' => []]);
+    }
+    $out = [];
+    foreach (cpchat_faq_list(true) as $f) {
+        $out[] = ['id' => (int) $f['id'], 'q' => $f['question'], 'a' => $f['answer'], 'kw' => $f['keywords']];
+    }
+    cpchat_json(['success' => true, 'faqs' => $out]);
+}
+
+function cpchatRate()
+{
+    if (!cpchat_ready()) {
+        cpchat_error('Chat is unavailable');
+    }
+    $b = cpchat_post_body();
+    $token = isset($b['token']) ? preg_replace('/[^a-f0-9]/', '', strtolower($b['token'])) : '';
+    $rating = isset($b['rating']) ? (int) $b['rating'] : 0;
+    if ($token === '' || $rating < 1 || $rating > 5) {
+        cpchat_error('Invalid rating');
+    }
+    $conversation = cpchat_find_conversation($token);
+    if (!$conversation) {
+        cpchat_error('Chat not found');
+    }
+    $conversation->rating = $rating;
+    $conversation->save();
+    cpchat_json(['success' => true, 'rating' => $rating]);
+}
+
+function cpchatTyping()
+{
+    if (!cpchat_ready()) {
+        cpchat_json(['success' => false]);
+    }
+    $b = cpchat_post_body();
+    $token = isset($b['token']) ? preg_replace('/[^a-f0-9]/', '', strtolower($b['token'])) : '';
+    if ($token !== '') {
+        $c = cpchat_find_conversation($token);
+        if ($c) {
+            $c->customer_typing_at = date('Y-m-d H:i:s');
+            $c->save();
+        }
+    }
+    cpchat_json(['success' => true]);
 }
 
 function cpchatClose()
@@ -1343,19 +1660,22 @@ function cpchatClose()
  * ------------------------------------------------------------------ */
 
 /** Guard + shared assigns for the three admin pages. Returns the admin row. */
-function cpchat_page($title)
+function cpchat_page($title, $manageOnly = false)
 {
     global $ui, $captivePortalChat_version;
     _admin();
     $ui->assign('_title', $title);
     $admin = cpchat_admin();
     $ui->assign('_admin', $admin);
-    if (!cpchat_can_manage($admin)) {
+    $allowed = $manageOnly ? cpchat_can_manage($admin) : cpchat_can_chat($admin);
+    if (!$allowed) {
         _alert(Lang::T('You do not have permission to access this page'), 'danger', "dashboard");
         exit;
     }
     $install = cpchat_install();
+    cpchat_cleanup_old();
     $ui->assign('install_error', ($install === true) ? '' : $install);
+    $ui->assign('can_manage', cpchat_can_manage($admin));
     $ui->assign('cpchat_version', $captivePortalChat_version);
     $ui->assign('navbar_state', cpchatnavbar_state());
     $ui->assign('s', cpchat_settings());
@@ -1423,6 +1743,7 @@ function captivePortalChatInbox()
     $ui->assign('filters', $filters);
     $ui->assign('active_id', $activeId);
     $ui->assign('active', $active ? cpchat_conversation_payload($active) : null);
+    $ui->assign('active_customer', $active ? cpchat_customer_match($active) : null);
     $ui->assign('thread', $thread);
     $ui->assign('thread_last_id', empty($thread) ? 0 : (int) $thread[count($thread) - 1]['id']);
     $agents = cpchat_agents_list();
@@ -1461,7 +1782,7 @@ function cpchat_close_reasons()
 function captivePortalChatSettings()
 {
     global $ui, $_app_stage, $captivePortalChat_version;
-    $admin = cpchat_page(Lang::T('Captive Portal Chat Settings'));
+    $admin = cpchat_page(Lang::T('Captive Portal Chat Settings'), true);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($_app_stage == 'Demo') {
@@ -1487,6 +1808,15 @@ function captivePortalChatSettings()
         if ($action === 'canned_delete') {
             cpchat_canned_delete((int) _post('canned_id', 0));
             r2(cpchat_url('captivePortalChatSettings'), 's', Lang::T('Deleted'));
+        }
+        if ($action === 'faq_add') {
+            $id = (int) _post('faq_id', 0);
+            $ok = cpchat_faq_save($id, _post('faq_question', ''), _post('faq_answer', ''), _post('faq_keywords', ''), _post('faq_enabled', '1') === '1' ? 1 : 0);
+            r2(cpchat_url('captivePortalChatSettings') . '#tabFaqs', ($ok ? 's' : 'e'), $ok ? Lang::T('Saved') : Lang::T('Nothing saved'));
+        }
+        if ($action === 'faq_delete') {
+            cpchat_faq_delete((int) _post('faq_id', 0));
+            r2(cpchat_url('captivePortalChatSettings') . '#tabFaqs', 's', Lang::T('Deleted'));
         }
         if ($action === 'block_add') {
             $type = _post('block_type', 'ip');
@@ -1517,6 +1847,10 @@ function captivePortalChatSettings()
             cpchat_save_setting('cpchat_poll_closed', max(10, (int) _post('cpchat_poll_closed', 20)));
             cpchat_save_setting('cpchat_poll_admin', max(5, (int) _post('cpchat_poll_admin', 15)));
             cpchat_save_setting('cpchat_max_length', min(2000, max(100, (int) _post('cpchat_max_length', 1000))));
+            cpchat_save_setting('cpchat_faq_enabled', _post('cpchat_faq_enabled') === 'yes' ? 'yes' : 'no');
+            cpchat_save_setting('cpchat_plans_enabled', _post('cpchat_plans_enabled') === 'yes' ? 'yes' : 'no');
+            cpchat_save_setting('cpchat_account_check_enabled', _post('cpchat_account_check_enabled') === 'yes' ? 'yes' : 'no');
+            cpchat_save_setting('cpchat_retention_days', max(0, (int) _post('cpchat_retention_days', 0)));
         } elseif ($form === 'hours') {
             cpchat_save_setting('cpchat_hours_enabled', _post('cpchat_hours_enabled') === 'yes' ? 'yes' : 'no');
             cpchat_save_setting('cpchat_hours_start', cpchat_time_value(_post('cpchat_hours_start'), '08:00'));
@@ -1543,6 +1877,7 @@ function captivePortalChatSettings()
     $s = cpchat_settings();
     $ui->assign('hoursOn', array_flip(array_filter(array_map('intval', explode(',', $s['hours_days'])))));
     $ui->assign('canned', cpchat_canned_list());
+    $ui->assign('faqs', cpchat_faq_list());
     $ui->assign('blocked', cpchat_blocked_list());
     $ui->assign('spamlog', cpchat_spamlog_list(20));
     $ui->assign('tagOptions', cpchat_tag_options());
@@ -1615,7 +1950,10 @@ function cpchat_page_assets($page, $data = [])
                 'settings' => cpchat_url('captivePortalChatSettings'),
                 'csv' => cpchat_url('cpchatExportCsv'),
                 'pdf' => cpchat_url('cpchatExportPdf'),
+                'typing' => cpchat_url('cpchatAdminTyping'),
+                'lookup' => cpchat_url('cpchatAdminCustomerLookup'),
             ],
+            'can_manage' => cpchat_can_manage(cpchat_admin()),
             'poll' => $s['poll_admin'],
             'sound' => $s['sound'],
             'max_length' => $s['max_length'],
@@ -1643,7 +1981,7 @@ function cpchatNavbarJs()
         exit;
     }
     $admin = cpchat_admin();
-    if (!cpchat_can_manage($admin)) {
+    if (!cpchat_can_chat($admin)) {
         header('Content-Type: application/javascript; charset=utf-8');
         echo '/* Captive Portal Chat: no permission */';
         exit;
@@ -1683,13 +2021,14 @@ function cpchat_snippet($page)
  *  Admin JSON endpoints
  * ------------------------------------------------------------------ */
 
-function cpchat_require_admin()
+function cpchat_require_admin($manageOnly = false)
 {
     if (!Admin::getID()) {
         cpchat_error('Unauthorized', 401);
     }
     $admin = cpchat_admin();
-    if (!cpchat_can_manage($admin)) {
+    $allowed = $manageOnly ? cpchat_can_manage($admin) : cpchat_can_chat($admin);
+    if (!$allowed) {
         cpchat_error('No permission', 403);
     }
     if (!cpchat_ready()) {
@@ -1744,9 +2083,13 @@ function cpchatAdminThread()
         $conversation->save();
     }
     $fresh = ORM::for_table('tbl_cpchat_conversations')->find_one($id);
+    $freshArr = $fresh->as_array();
+    $custTyping = !empty($fresh->customer_typing_at) && strtotime($fresh->customer_typing_at) >= (time() - 5);
     cpchat_json([
         'success' => true,
-        'conversation' => cpchat_conversation_payload($fresh->as_array()),
+        'conversation' => cpchat_conversation_payload($freshArr),
+        'customer' => cpchat_customer_match($freshArr),
+        'customer_typing' => $custTyping,
         'messages' => $messages,
         'last_id' => $lastId,
     ]);
@@ -1757,6 +2100,7 @@ function cpchatAdminSend()
     $admin = cpchat_require_admin();
     $b = cpchat_post_body();
     $id = isset($b['id']) ? (int) $b['id'] : 0;
+    $type = (isset($b['type']) && $b['type'] === 'note') ? 'note' : 'admin';
     $body = cpchat_clean_text(isset($b['body']) ? $b['body'] : '', cpchat_settings()['max_length']);
     $conversation = cpchat_find_conversation('', $id);
     if (!$conversation) {
@@ -1766,15 +2110,66 @@ function cpchatAdminSend()
         cpchat_error('Nothing to send');
     }
     $name = $admin['fullname'] !== '' ? $admin['fullname'] : $admin['username'];
-    $res = cpchat_add_message($id, 'admin', $body, '', (int) $admin['id'], $name);
-    // whoever answers a loose chat quietly becomes its owner
-    if ((int) $conversation->assigned_to === 0) {
-        $conversation->assigned_to = (int) $admin['id'];
-        $conversation->assigned_at = date('Y-m-d H:i:s');
+    $res = cpchat_add_message($id, $type, $body, '', (int) $admin['id'], $name);
+    if ($type === 'admin') {
+        // whoever answers a loose chat quietly becomes its owner
+        if ((int) $conversation->assigned_to === 0) {
+            $conversation->assigned_to = (int) $admin['id'];
+            $conversation->assigned_at = date('Y-m-d H:i:s');
+        }
+        $conversation->unread_customer = 1;
+        $conversation->save();
     }
-    $conversation->unread_customer = 1;
-    $conversation->save();
-    cpchat_json(['success' => true, 'id' => $res['id'], 'at' => $res['created_at'], 'assigned_to' => (int) $conversation->assigned_to]);
+    cpchat_json(['success' => true, 'id' => $res['id'], 'at' => $res['created_at'], 'type' => $type, 'assigned_to' => (int) $conversation->assigned_to]);
+}
+
+function cpchatAdminTyping()
+{
+    cpchat_require_admin();
+    $b = cpchat_post_body();
+    $id = isset($b['id']) ? (int) $b['id'] : 0;
+    if ($id > 0) {
+        $c = cpchat_find_conversation('', $id);
+        if ($c) {
+            $c->admin_typing_at = date('Y-m-d H:i:s');
+            $c->save();
+        }
+    }
+    cpchat_json(['success' => true]);
+}
+
+function cpchatAdminCustomerLookup()
+{
+    cpchat_require_admin();
+    $q = trim((string) _get('q', ''));
+    if (mb_strlen($q) < 2) {
+        cpchat_json(['success' => true, 'results' => []]);
+    }
+    $like = '%' . $q . '%';
+    $rows = ORM::for_table('tbl_customers')
+        ->where_raw('(username LIKE ? OR fullname LIKE ? OR phonenumber LIKE ?)', [$like, $like, $like])
+        ->limit(8)
+        ->find_array();
+    $out = [];
+    foreach ((array) $rows as $u) {
+        $r = ORM::for_table('tbl_user_recharges')
+            ->where('customer_id', $u['id'])
+            ->order_by_desc('id')
+            ->find_one();
+        $out[] = [
+            'id' => (int) $u['id'],
+            'fullname' => (string) $u['fullname'],
+            'username' => (string) $u['username'],
+            'phonenumber' => (string) $u['phonenumber'],
+            'balance' => (string) $u['balance'],
+            'plan' => $r ? (string) $r->namebp : '',
+            'status' => $r ? (string) $r->status : '',
+            'expiration' => $r ? trim($r->expiration . ' ' . $r->time) : '',
+            'router' => $r ? (string) $r->routers : '',
+            'url' => U . 'customers/view/' . (int) $u['id'],
+        ];
+    }
+    cpchat_json(['success' => true, 'results' => $out]);
 }
 
 function cpchatAdminStatus()
@@ -1908,7 +2303,7 @@ function cpchatAdminSpam()
 /** Block one visitor straight from the inbox */
 function cpchatAdminBlock()
 {
-    $admin = cpchat_require_admin();
+    $admin = cpchat_require_admin(true);
     $b = cpchat_post_body();
     $id = isset($b['id']) ? (int) $b['id'] : 0;
     $conversation = cpchat_find_conversation('', $id);
@@ -1986,7 +2381,7 @@ function cpchatAdminCount()
 /** Permanently delete a conversation with its messages (dashboard quick action) */
 function cpchatAdminDelete()
 {
-    $admin = cpchat_require_admin();
+    $admin = cpchat_require_admin(true);
     $b = cpchat_post_body();
     $id = isset($b['id']) ? (int) $b['id'] : 0;
     $conversation = cpchat_find_conversation('', $id);

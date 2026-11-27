@@ -24,6 +24,7 @@
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabHours">{Lang::T('Support hours')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabModeration">{Lang::T('Tags &amp; Closure')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabCanned">{Lang::T('Canned replies')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabFaqs">{Lang::T('FAQs')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabSpam">{Lang::T('Spam protection')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabSetup">{Lang::T('Installation')}</a></li>
                 </ul>
@@ -87,6 +88,40 @@
                                             <option value="yes"{if $s.sound} selected{/if}>{Lang::T('On')}</option>
                                             <option value="no"{if !$s.sound} selected{/if}>{Lang::T('Off')}</option>
                                         </select>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-4">
+                                            <div class="form-group">
+                                                <label>{Lang::T('Quick FAQs')}</label>
+                                                <select name="cpchat_faq_enabled" class="form-control">
+                                                    <option value="yes"{if $s.faq_enabled} selected{/if}>{Lang::T('On')}</option>
+                                                    <option value="no"{if !$s.faq_enabled} selected{/if}>{Lang::T('Off')}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-4">
+                                            <div class="form-group">
+                                                <label>{Lang::T('Plans chip')}</label>
+                                                <select name="cpchat_plans_enabled" class="form-control">
+                                                    <option value="yes"{if $s.plans_enabled} selected{/if}>{Lang::T('On')}</option>
+                                                    <option value="no"{if !$s.plans_enabled} selected{/if}>{Lang::T('Off')}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-4">
+                                            <div class="form-group">
+                                                <label>{Lang::T('Account check')}</label>
+                                                <select name="cpchat_account_check_enabled" class="form-control">
+                                                    <option value="yes"{if $s.account_check_enabled} selected{/if}>{Lang::T('On')}</option>
+                                                    <option value="no"{if !$s.account_check_enabled} selected{/if}>{Lang::T('Off')}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{Lang::T('Auto-delete closed chats (days)')}</label>
+                                        <input type="number" name="cpchat_retention_days" class="form-control" min="0" max="3650" value="{$s.retention_days|default:0}">
+                                        <p class="help-block">{Lang::T('0 = keep forever. Recommended 30-90 days for 50K+ users.')}</p>
                                     </div>
                                     <div class="form-group">
                                         <div class="row">
@@ -232,6 +267,61 @@
                                         {if $canned|@count eq 0}
                                             <tr><td colspan="3" class="text-muted text-center">{Lang::T('No canned replies yet')}</td></tr>
                                         {/if}
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tabFaqs" class="tab-pane">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <form method="post" action="{$_url}plugin/captivePortalChatSettings"><input type="hidden" name="csrf_token" value="{$csrf_token}">
+                                    <input type="hidden" name="action" value="faq_add">
+                                    <input type="hidden" name="faq_id" id="faqId" value="0">
+                                    <div class="form-group">
+                                        <label>{Lang::T('Question')}</label>
+                                        <input type="text" name="faq_question" id="faqQuestion" class="form-control" maxlength="160" placeholder="e.g. Voucher code not working?" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{Lang::T('Keywords (comma separated)')}</label>
+                                        <input type="text" name="faq_keywords" id="faqKeywords" class="form-control" maxlength="255" placeholder="voucher,code,pin,invalid">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{Lang::T('Answer')}</label>
+                                        <textarea name="faq_answer" id="faqAnswer" class="form-control" rows="4" maxlength="1500" required></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <select name="faq_enabled" id="faqEnabled" class="form-control">
+                                            <option value="1">{Lang::T('Enabled')}</option>
+                                            <option value="0">{Lang::T('Disabled')}</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-save"></i> {Lang::T('Save FAQ')}</button>
+                                    <button type="button" class="btn btn-default btn-sm" id="faqReset">{Lang::T('Clear')}</button>
+                                </form>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="cp-table-wrap">
+                                <table class="table table-condensed table-hover">
+                                    <thead><tr><th>{Lang::T('Question')}</th><th>{Lang::T('Keywords')}</th><th class="text-right"></th></tr></thead>
+                                    <tbody>
+                                        {foreach $faqs as $f}
+                                            <tr>
+                                                <td><b>{$f.question|escape:'html'}</b>{if !$f.enabled} <span class="label label-default">Off</span>{/if}<br><small class="text-muted">{$f.answer|escape:'html'|truncate:70}</small></td>
+                                                <td><small>{$f.keywords|escape:'html'}</small></td>
+                                                <td class="text-right" style="white-space:nowrap;">
+                                                    <button type="button" class="btn btn-default btn-xs cpchat-faq-edit"
+                                                        data-id="{$f.id}" data-q="{$f.question|escape:'html'}" data-a="{$f.answer|escape:'html'}" data-kw="{$f.keywords|escape:'html'}" data-on="{$f.enabled}"><i class="fa fa-pencil"></i></button>
+                                                    <form method="post" action="{$_url}plugin/captivePortalChatSettings" style="display:inline;" onsubmit="return confirm('Delete this FAQ?');"><input type="hidden" name="csrf_token" value="{$csrf_token}">
+                                                        <input type="hidden" name="action" value="faq_delete">
+                                                        <input type="hidden" name="faq_id" value="{$f.id}">
+                                                        <button type="submit" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        {/foreach}
                                     </tbody>
                                 </table>
                                 </div>
@@ -519,6 +609,27 @@
             document.getElementById('cannedId').value = '0';
             document.getElementById('cannedTitle').value = '';
             document.getElementById('cannedBody').value = '';
+        };
+    }
+    var faqEdits = document.querySelectorAll('.cpchat-faq-edit');
+    for (var f = 0; f < faqEdits.length; f++) {
+        faqEdits[f].onclick = function () {
+            document.getElementById('faqId').value = this.getAttribute('data-id');
+            document.getElementById('faqQuestion').value = this.getAttribute('data-q');
+            document.getElementById('faqAnswer').value = this.getAttribute('data-a');
+            document.getElementById('faqKeywords').value = this.getAttribute('data-kw');
+            document.getElementById('faqEnabled').value = this.getAttribute('data-on') || '1';
+            document.getElementById('faqQuestion').focus();
+        };
+    }
+    var faqReset = document.getElementById('faqReset');
+    if (faqReset) {
+        faqReset.onclick = function () {
+            document.getElementById('faqId').value = '0';
+            document.getElementById('faqQuestion').value = '';
+            document.getElementById('faqAnswer').value = '';
+            document.getElementById('faqKeywords').value = '';
+            document.getElementById('faqEnabled').value = '1';
         };
     }
 })();

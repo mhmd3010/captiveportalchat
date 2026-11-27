@@ -12,7 +12,7 @@
         </div>
         <div class="cp-head-actions">
             <a href="{$_url}plugin/captivePortalChatInbox" class="cp-btn cp-btn-primary"><i class="fa fa-inbox"></i> {Lang::T('Open Inbox')}</a>
-            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
+            {if $can_manage}<a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>{/if}
         </div>
     </div>
 
@@ -21,13 +21,13 @@
             <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
         </div>
     {/if}
-    {if $navbar_state.status neq 'installed'}
+    {if $can_manage && $navbar_state.status neq 'installed'}
         <div class="cp-banner cp-banner-warn">
             <span><i class="fa fa-bell-o"></i> {Lang::T('The navbar notification bell is not installed yet.')}</span>
             <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('Install it')}</a>
         </div>
     {/if}
-    {if !$s.enabled}
+    {if $can_manage && !$s.enabled}
         <div class="cp-banner cp-banner-info">
             <span><i class="fa fa-info-circle"></i> {Lang::T('Chat is currently disabled. Customers cannot start new chats.')}</span>
             <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-sm">{Lang::T('Enable it')}</a>
