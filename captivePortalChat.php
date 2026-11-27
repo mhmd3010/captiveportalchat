@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.4';
+$GLOBALS['captivePortalChat_version'] = '2.3.5';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -525,7 +525,7 @@ function cpchat_message_row($m)
         'attachment' => $att,
         'ref' => $m['client_ref'],
         'at' => $m['created_at'],
-        'time' => date('H:i', strtotime($m['created_at'])),
+        'time' => date('H:i:s', strtotime($m['created_at'])),
     ];
 }
 

@@ -895,7 +895,7 @@
 
     function timeStr() {
         var d = new Date();
-        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
     }
 
     var audioCtx = null;

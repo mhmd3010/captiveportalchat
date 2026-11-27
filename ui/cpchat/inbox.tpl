@@ -662,7 +662,7 @@
             replyEl.value = '';
             autoGrow();
             if (res.id > lastId) {
-                appendMessages([{ id: res.id, sender: replyMode, body: text, time: (res.at || '').slice(11, 16), sender_name: '' }]);
+                appendMessages([{ id: res.id, sender: replyMode, body: text, time: (res.at || '').slice(11, 19), sender_name: '' }]);
                 lastId = res.id;
             }
             if (res.assigned_to && assignEl) {
@@ -896,7 +896,7 @@
                 try { res = JSON.parse(x.responseText); } catch (e) { res = null; }
                 if (!res || !res.success) { toast((res && res.message) ? res.message : 'Upload failed', true); return; }
                 if (res.id > lastId) {
-                    appendMessages([{ id: res.id, sender: 'admin', body: res.body || '', attachment: res.attachment, time: (res.at || '').slice(11, 16), sender_name: '' }]);
+                    appendMessages([{ id: res.id, sender: 'admin', body: res.body || '', attachment: res.attachment, time: (res.at || '').slice(11, 19), sender_name: '' }]);
                     lastId = res.id;
                 }
                 loadListSoon();
