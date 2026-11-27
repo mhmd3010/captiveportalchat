@@ -27,7 +27,7 @@ unset($cpchatRoles);
  * Contact: https://t.me/mhmd_3010
  */
 
-$captivePortalChat_version = '2.1.2';
+$GLOBALS['captivePortalChat_version'] = '2.1.2';
 
 /* ------------------------------------------------------------------ *
  *  Schema
