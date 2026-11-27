@@ -970,6 +970,12 @@
         els.chat.style.flexDirection = 'column';
         els.chat.style.minHeight = '0';
         buildQuickBar(els.chat);
+        els.chatOffline = el('div', 'cpchat-offline', '');
+        els.chatOffline.style.margin = '8px 12px 0';
+        els.chatOffline.appendChild(el('b', '', (cfg.hours && cfg.hours.length) ? cfg.hours : 'Offline'));
+        els.chatOffline.appendChild(document.createTextNode(cfg.awayMessage || 'We are offline right now, leave your question and we will reply as soon as we are back.'));
+        els.chatOffline.style.display = 'none';
+        els.chat.appendChild(els.chatOffline);
         els.chat.appendChild(els.body);
         els.chat.appendChild(els.typing);
         els.chat.appendChild(els.rateBar);
@@ -1075,9 +1081,13 @@
         if (cfg.open) {
             els.state.className = 'cpchat-state';
             els.state.textContent = 'Online';
+            if (els.chatOffline) { els.chatOffline.style.display = 'none'; }
+            if (els.offline) { els.offline.style.display = 'none'; }
         } else {
             els.state.className = 'cpchat-state off';
             els.state.textContent = (cfg.hours && cfg.hours.length) ? cfg.hours : 'Offline';
+            if (els.chatOffline) { els.chatOffline.style.display = 'block'; }
+            if (els.offline) { els.offline.style.display = 'block'; }
         }
     }
 
