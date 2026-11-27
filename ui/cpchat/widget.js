@@ -416,7 +416,7 @@
             var u = el('input', 'cpchat-acct-in');
             u.type = 'text';
             u.placeholder = 'Hotspot username';
-            u.value = (pageMeta.username && !/^\$\(/.test(pageMeta.username)) ? pageMeta.username : '';
+            u.value = (page.username && !/^\$\(/.test(page.username)) ? page.username : '';
             var p = el('input', 'cpchat-acct-in');
             p.type = 'password';
             p.placeholder = 'Password';
@@ -486,7 +486,8 @@
     }
 
     function buildQuickBar(parent) {
-        if (!cfg.plansEnabled && !cfg.accountCheckEnabled && !(cfg.faqEnabled && (cfg.faqs || []).length)) {
+        var canAccount = cfg.accountCheckEnabled && page.page === 'status';
+        if (!cfg.plansEnabled && !canAccount && !(cfg.faqEnabled && (cfg.faqs || []).length)) {
             return null;
         }
         var bar = el('div', 'cpchat-quick');
@@ -496,7 +497,7 @@
             b1.onclick = openPlans;
             bar.appendChild(b1);
         }
-        if (cfg.accountCheckEnabled) {
+        if (canAccount) {
             var b2 = el('button', 'cpchat-chip', 'My Account');
             b2.type = 'button';
             b2.onclick = openAccountCheck;
