@@ -163,9 +163,10 @@
             '.cpchat-panel.on{display:flex}',
             '@media (max-width:480px){.cpchat-panel{top:auto;right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:calc(100vh - 20px);max-height:600px;border-radius:18px}}',
             '.cpchat-head{background:#fff;color:#111827;padding:12px 14px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f1f5f9}',
-            '.cpchat-orb{width:34px;height:34px;border-radius:50%;flex-shrink:0;position:relative;',
+            '.cpchat-orb{width:34px;height:34px;border-radius:50%;flex-shrink:0;position:relative;overflow:visible;',
             'background:radial-gradient(circle at 30% 30%,#fde047 0%,#fb7185 38%,#c084fc 72%,#60a5fa 100%);',
             'box-shadow:0 4px 14px rgba(244,114,182,.35)}',
+            '.cpchat-orb-img{width:34px;height:34px;border-radius:50%;object-fit:cover;display:block;background:#fff;border:1px solid #e5e7eb}',
             '.cpchat-orb-dot{position:absolute;right:0;bottom:0;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid #fff}',
             '.cpchat-orb-dot.off{background:#ef4444}',
             '.cpchat-head-info{flex:1;min-width:0}',
@@ -217,7 +218,7 @@
             '.cpchat-cap input{width:76px;margin:0;text-align:center;padding:6px 8px;background:#fff}',
             '.cpchat-offline{font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:8px 10px;margin:0 0 10px}',
             '.cpchat-offline b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}',
-            '.cpchat-brand{font-size:10.5px;color:#9ca3af;text-align:center;padding:4px 0 7px;background:#fff}',
+            '.cpchat-brand{font-size:7.5px;color:#9ca3af;opacity:.7;text-align:center;padding:4px 0 7px;background:#fff}',
             '.cpchat-quick{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:#fff;border-bottom:1px solid #f1f5f9}',
             '.cpchat-form .cpchat-quick{background:transparent;border:0;padding:0;margin:0 0 12px}',
             '.cpchat-chip{width:auto;background:#f9fafb;border:1px solid #e5e7eb;color:#111827;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;line-height:1.35;transition:all .15s}',
@@ -981,6 +982,15 @@
         els.panel = el('div', 'cpchat-panel');
         var head = el('div', 'cpchat-head');
         var orb = el('div', 'cpchat-orb');
+        if (cfg.logo) {
+            var logoImg = el('img', 'cpchat-orb-img', '');
+            logoImg.src = cfg.logo;
+            logoImg.alt = cfg.agent || 'Logo';
+            logoImg.onerror = function () { if (logoImg.parentNode) { logoImg.parentNode.removeChild(logoImg); } };
+            orb.style.background = 'none';
+            orb.style.boxShadow = 'none';
+            orb.appendChild(logoImg);
+        }
         els.orbDot = el('span', 'cpchat-orb-dot');
         orb.appendChild(els.orbDot);
         head.appendChild(orb);

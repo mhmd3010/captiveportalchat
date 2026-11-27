@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.3';
+$GLOBALS['captivePortalChat_version'] = '2.3.4';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -1230,8 +1230,17 @@ function cpchat_js_config($data)
 
 function cpchatWidgetJs()
 {
+    global $UPLOAD_PATH, $UPLOAD_URL_PATH;
     $s = cpchat_settings();
     $open = cpchat_is_open();
+    $logo = '';
+    if (!empty($UPLOAD_PATH) && file_exists($UPLOAD_PATH . DIRECTORY_SEPARATOR . 'logo.png')) {
+        $u = !empty($UPLOAD_URL_PATH) ? rtrim($UPLOAD_URL_PATH, '/') : (rtrim(APP_URL, '/') . '/system/uploads');
+        if (strpos($u, 'http') !== 0) {
+            $u = rtrim(APP_URL, '/') . '/' . ltrim($u, '/');
+        }
+        $logo = $u . '/logo.png';
+    }
     cpchat_output_asset(
         'widget.js',
         "window.CPCHAT_CFG = window.CPCHAT_CFG || " . cpchat_js_config([
@@ -1239,6 +1248,7 @@ function cpchatWidgetJs()
             'title' => $s['title'],
             'welcome' => $s['welcome'],
             'agent' => $s['agent'],
+            'logo' => $logo,
             'pollOpen' => $s['poll_open'],
             'pollClosed' => $s['poll_closed'],
             'sound' => $s['sound'],
