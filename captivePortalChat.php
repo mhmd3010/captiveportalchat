@@ -1,9 +1,20 @@
 <?php
 $cpchatRoles = ['SuperAdmin', 'Admin', 'Support', 'Agent'];
+$cpchatLabel = '';
+if (!empty($_SESSION['aid'])) {
+    try {
+        $cpchatUnread = (int) ORM::for_table('tbl_cpchat_conversations')->where_gt('unread_admin', 0)->sum('unread_admin');
+        if ($cpchatUnread > 0) {
+            $cpchatLabel = $cpchatUnread > 99 ? '99+' : (string) $cpchatUnread;
+        }
+    } catch (Throwable $e) {
+        $cpchatLabel = '';
+    }
+}
 // one sidebar entry only: Dashboard is the landing page, Inbox and Settings are reached
 // from its breadcrumb + header buttons (the routes themselves still exist)
-register_menu("Captive Portal Chat", true, "captivePortalChat", 'AFTER_MESSAGE', 'ion ion-chatbubbles', '', 'success', $cpchatRoles);
-unset($cpchatRoles);
+register_menu("Captive Portal Chat", true, "captivePortalChat", 'AFTER_MESSAGE', 'ion ion-chatbubbles', $cpchatLabel, 'danger', $cpchatRoles);
+unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
 
 /**
  * Bismillahir Rahmanir Rahim
@@ -301,6 +312,9 @@ function cpchat_is_open()
         return true;
     }
     $day = (int) date('N'); // 1 = Monday ... 7 = Sunday
+    if ($s['hours_days'] === 'none') {
+        return false;
+    }
     $days = array_filter(array_map('intval', explode(',', $s['hours_days'])));
     if (!empty($days) && !in_array($day, $days, true)) {
         return false;
@@ -339,6 +353,7 @@ function cpchat_hours_label()
 
 function cpchat_save_setting($key, $value)
 {
+    global $config;
     $d = ORM::for_table('tbl_appconfig')->where('setting', $key)->find_one();
     if (!$d) {
         $d = ORM::for_table('tbl_appconfig')->create();
@@ -346,6 +361,7 @@ function cpchat_save_setting($key, $value)
     }
     $d->value = $value;
     $d->save();
+    $config[$key] = $value;
 }
 
 /* ------------------------------------------------------------------ *
@@ -830,6 +846,7 @@ function cpchat_seed_faqs()
             ['Connected, but no internet / slow?', 'Toggle Wi-Fi off and on once, or check if your plan has expired. You can tap "My Account" below to verify your status.', 'slow,no internet,disconnect,buffering,speed'],
             ['How to view plans & prices?', 'Tap "Plans & Prices" in the quick menu to see all active Hotspot packages and prices.', 'plan,plans,price,prices,package,packages,buy,renew'],
             ['Forgot username or password?', 'Send us your registered phone number or full name here and a support agent will help recover your account.', 'forgot,password,username,reset,login'],
+            ['How to renew or buy a plan?', 'Check "Plans & Prices" to pick a package, then pay via voucher or contact support here for assistance.', 'renew,extend,expired,recharge,topup,payment'],
         ];
         foreach ($defaults as $i => $d) {
             $row = ORM::for_table('tbl_cpchat_faqs')->create();
@@ -1673,6 +1690,7 @@ function cpchat_page($title, $manageOnly = false)
         exit;
     }
     $install = cpchat_install();
+    cpchat_seed_faqs();
     cpchat_cleanup_old();
     $ui->assign('install_error', ($install === true) ? '' : $install);
     $ui->assign('can_manage', cpchat_can_manage($admin));
@@ -1818,6 +1836,10 @@ function captivePortalChatSettings()
             cpchat_faq_delete((int) _post('faq_id', 0));
             r2(cpchat_url('captivePortalChatSettings') . '#tabFaqs', 's', Lang::T('Deleted'));
         }
+        if ($action === 'faq_seed') {
+            cpchat_seed_faqs();
+            r2(cpchat_url('captivePortalChatSettings') . '#tabFaqs', 's', Lang::T('Default FAQs loaded'));
+        }
         if ($action === 'block_add') {
             $type = _post('block_type', 'ip');
             $value = cpchat_meta_value(_post('block_value', ''), 60);
@@ -1871,7 +1893,8 @@ function captivePortalChatSettings()
             cpchat_save_setting('cpchat_spam_block_hours', max(1, (int) _post('cpchat_spam_block_hours', 24)));
         }
         _log('[' . $admin['username'] . ']: Captive Portal Chat settings saved', $admin['user_type'], $admin['id']);
-        r2(cpchat_url('captivePortalChatSettings'), 's', Lang::T('Settings Saved Successfully'));
+        $hash = ($form === 'hours') ? '#tabHours' : (($form === 'moderation') ? '#tabModeration' : (($form === 'spam') ? '#tabSpam' : ''));
+        r2(cpchat_url('captivePortalChatSettings') . $hash, 's', Lang::T('Settings Saved Successfully'));
     }
 
     $s = cpchat_settings();
@@ -1893,7 +1916,10 @@ function captivePortalChatSettings()
 
 function cpchat_time_value($value, $default)
 {
-    return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $value) ? $value : $default;
+    if (preg_match('/^(\d{1,2}):([0-5]\d)/', trim((string) $value), $m)) {
+        return sprintf('%02d:%02d', min(23, (int) $m[1]), (int) $m[2]);
+    }
+    return $default;
 }
 
 function cpchat_days_value($value)
@@ -1902,7 +1928,8 @@ function cpchat_days_value($value)
         return $d >= 1 && $d <= 7;
     });
     sort($days);
-    return implode(',', array_unique($days));
+    $unique = array_unique($days);
+    return empty($unique) ? 'none' : implode(',', $unique);
 }
 
 /** Credit line injected into the admin footer (reuses the theme #version slot) */

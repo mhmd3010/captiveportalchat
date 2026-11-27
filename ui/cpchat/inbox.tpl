@@ -27,12 +27,6 @@
             <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
         </div>
     {/if}
-    {if $can_manage && $navbar_state.status neq 'installed'}
-        <div class="cp-banner cp-banner-warn">
-            <span><i class="fa fa-bell-o"></i> {Lang::T('The navbar notification bell is not installed yet.')}</span>
-            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('Install it')}</a>
-        </div>
-    {/if}
     {if !$open_now && $s.hours_enabled}
         <div class="cp-banner cp-banner-info">
             <span><i class="fa fa-clock-o"></i> {Lang::T('Outside support hours')} &mdash; {$hours_label|escape:'html'}. {Lang::T('Customers see the away message until the team is back.')}</span>

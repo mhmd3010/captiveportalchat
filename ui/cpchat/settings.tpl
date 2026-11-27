@@ -301,6 +301,10 @@
                                     <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-save"></i> {Lang::T('Save FAQ')}</button>
                                     <button type="button" class="btn btn-default btn-sm" id="faqReset">{Lang::T('Clear')}</button>
                                 </form>
+                                <form method="post" action="{$_url}plugin/captivePortalChatSettings" style="margin-top:8px;"><input type="hidden" name="csrf_token" value="{$csrf_token}">
+                                    <input type="hidden" name="action" value="faq_seed">
+                                    <button type="submit" class="btn btn-default btn-xs"><i class="fa fa-magic"></i> {Lang::T('Load Default FAQs')}</button>
+                                </form>
                             </div>
                             <div class="col-md-7">
                                 <div class="cp-table-wrap">
@@ -495,47 +499,13 @@
 
                     <div id="tabSetup" class="tab-pane">
                         <div class="row">
-                            <div class="col-md-5">
-                                <h4>{Lang::T('Navbar notification')}</h4>
-                                <p>
-                                    {if $navbar_state.status eq 'installed'}
-                                        <span class="label label-success">{Lang::T('Installed')}</span>
-                                    {else}
-                                        <span class="label label-warning">{Lang::T('Not installed')}</span>
-                                    {/if}
-                                </p>
-                                <p class="text-muted" style="word-break:break-all;">{$navbar_state.file|escape:'html'}</p>
-                                <p>{Lang::T('Adds the chat bell with unread counter, popup and browser notification to the admin top navbar.')}</p>
-                                {if !$navbar_state.writable}
-                                    <div class="alert alert-warning">{Lang::T('The template file is not writable by the web server user.')}</div>
-                                {/if}
-                                <form method="post" action="{$_url}plugin/captivePortalChatSettings" style="display:inline;"><input type="hidden" name="csrf_token" value="{$csrf_token}">
-                                    <input type="hidden" name="action" value="navbar_on">
-                                    <button type="submit" class="btn btn-success btn-sm" {if $navbar_state.status eq 'installed' || !$navbar_state.writable}disabled{/if}>
-                                        <i class="fa fa-bell"></i> {Lang::T('Install bell')}
-                                    </button>
-                                </form>
-                                <form method="post" action="{$_url}plugin/captivePortalChatSettings" style="display:inline;"><input type="hidden" name="csrf_token" value="{$csrf_token}">
-                                    <input type="hidden" name="action" value="navbar_off">
-                                    <button type="submit" class="btn btn-default btn-sm" {if $navbar_state.status neq 'installed'}disabled{/if}>
-                                        <i class="fa fa-bell-slash"></i> {Lang::T('Remove bell')}
-                                    </button>
-                                </form>
-                                <hr>
-                                <div class="row text-center">
-                                    <div class="col-xs-3"><b>{$stats.open|default:0}</b><br><small>{Lang::T('Open')}</small></div>
-                                    <div class="col-xs-3"><b>{$stats.closed|default:0}</b><br><small>{Lang::T('Closed')}</small></div>
-                                    <div class="col-xs-3"><b>{$stats.unread|default:0}</b><br><small>{Lang::T('Unread')}</small></div>
-                                    <div class="col-xs-3"><b>{$stats.messages|default:0}</b><br><small>{Lang::T('Messages')}</small></div>
-                                </div>
-                            </div>
-                            <div class="col-md-7">
+                            <div class="col-md-12">
                                 <h4>{Lang::T('Captive portal snippet')}</h4>
                                 <p>{Lang::T('Paste one block into each MikroTik hotspot template file, right before the closing body tag. The billing server must be reachable before login (hotspot walled garden / IP bindings).')}</p>
                                 <ul class="nav nav-tabs">
-                                    <li class="active"><a data-toggle="tab" href="#tabLogin">login.html</a></li>
-                                    <li><a data-toggle="tab" href="#tabLogout">logout.html</a></li>
-                                    <li><a data-toggle="tab" href="#tabStatus">status.html</a></li>
+                                    <li class="nav-item active"><a class="nav-link active" data-bs-toggle="tab" data-toggle="tab" href="#tabLogin">login.html</a></li>
+                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabLogout">logout.html</a></li>
+                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabStatus">status.html</a></li>
                                 </ul>
                                 <div class="tab-content" style="padding-top:10px;">
                                     <div id="tabLogin" class="tab-pane active">
@@ -572,9 +542,15 @@
 <script>
 (function () {
     'use strict';
-    if (window.location.hash && window.jQuery) {
+    if (window.location.hash) {
         var tabLink = document.querySelector('.nav-tabs a[href="' + window.location.hash + '"]');
-        if (tabLink) { jQuery(tabLink).tab('show'); }
+        if (tabLink) {
+            if (window.bootstrap && bootstrap.Tab) {
+                new bootstrap.Tab(tabLink).show();
+            } else if (window.jQuery) {
+                jQuery(tabLink).tab('show');
+            }
+        }
     }
     var btns = document.querySelectorAll('[data-copy]');
     for (var i = 0; i < btns.length; i++) {
