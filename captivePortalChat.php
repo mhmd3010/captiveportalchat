@@ -167,11 +167,16 @@ function cpchat_migrate()
  */
 function cpchat_install()
 {
+    global $config;
     static $done = false, $result = true;
     if ($done) {
         return $result;
     }
     $done = true;
+    $ver = $GLOBALS['captivePortalChat_version'] ?? '2.1.2';
+    if (!empty($config['cpchat_schema_ver']) && $config['cpchat_schema_ver'] === $ver) {
+        return true;
+    }
     try {
         $db = ORM::get_db();
         foreach (cpchat_schema() as $table => $sql) {
@@ -181,6 +186,7 @@ function cpchat_install()
             }
         }
         cpchat_migrate();
+        cpchat_save_setting('cpchat_schema_ver', $ver);
         $result = true;
     } catch (Throwable $e) {
         $result = $e->getMessage();
@@ -1015,9 +1021,11 @@ function cpchatCaptcha()
 
 function cpchat_output_asset($filename, $prelude = '', $type = 'application/javascript')
 {
-    global $captivePortalChat_version;
-    $path = $GLOBALS['root_path'] . 'system' . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR
-        . 'ui' . DIRECTORY_SEPARATOR . 'cpchat' . DIRECTORY_SEPARATOR . $filename;
+    $path = __DIR__ . DIRECTORY_SEPARATOR . 'ui' . DIRECTORY_SEPARATOR . 'cpchat' . DIRECTORY_SEPARATOR . $filename;
+    if (!file_exists($path)) {
+        $path = $GLOBALS['root_path'] . 'system' . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR
+            . 'ui' . DIRECTORY_SEPARATOR . 'cpchat' . DIRECTORY_SEPARATOR . $filename;
+    }
     if (!file_exists($path)) {
         if (!headers_sent()) {
             header('Content-Type: ' . $type . '; charset=utf-8');

@@ -18,18 +18,18 @@
                     </div>
                 {/if}
 
-                <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#tabGeneral">{Lang::T('General')}</a></li>
-                    <li><a data-toggle="tab" href="#tabHours">{Lang::T('Support hours')}</a></li>
-                    <li><a data-toggle="tab" href="#tabModeration">{Lang::T('Tags &amp; Closure')}</a></li>
-                    <li><a data-toggle="tab" href="#tabCanned">{Lang::T('Canned replies')}</a></li>
-                    <li><a data-toggle="tab" href="#tabSpam">{Lang::T('Spam protection')}</a></li>
-                    <li><a data-toggle="tab" href="#tabSetup">{Lang::T('Installation')}</a></li>
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item active"><a class="nav-link active" data-bs-toggle="tab" data-toggle="tab" href="#tabGeneral">{Lang::T('General')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabHours">{Lang::T('Support hours')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabModeration">{Lang::T('Tags &amp; Closure')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabCanned">{Lang::T('Canned replies')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabSpam">{Lang::T('Spam protection')}</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabSetup">{Lang::T('Installation')}</a></li>
                 </ul>
 
                 <div class="tab-content" style="padding-top:15px;">
 
-                    <div id="tabGeneral" class="tab-pane active">
+                    <div id="tabGeneral" class="tab-pane fade in show active">
                         <form method="post" action="{$_url}plugin/captivePortalChatSettings"><input type="hidden" name="csrf_token" value="{$csrf_token}">
                             <input type="hidden" name="cpchat_form" value="general">
                             <div class="row">
