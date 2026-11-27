@@ -270,6 +270,10 @@
                                     </tbody>
                                 </table>
                                 </div>
+                                <form method="post" action="{$_url}plugin/captivePortalChatSettings" style="margin-top:8px;"><input type="hidden" name="csrf_token" value="{$csrf_token}">
+                                    <input type="hidden" name="action" value="canned_seed">
+                                    <button type="submit" class="btn btn-default btn-xs"><i class="fa fa-magic"></i> {Lang::T('Load Default Canned Replies')}</button>
+                                </form>
                             </div>
                         </div>
                     </div>

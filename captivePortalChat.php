@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.1';
+$GLOBALS['captivePortalChat_version'] = '2.3.2';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -232,6 +232,7 @@ function cpchat_install()
         }
         cpchat_migrate();
         cpchat_seed_faqs();
+        cpchat_seed_canned();
         cpchat_save_setting('cpchat_schema_ver', $ver);
         $result = true;
     } catch (Throwable $e) {
@@ -883,6 +884,8 @@ function cpchat_seed_faqs()
             ['How to view plans & prices?', 'Tap "Plans & Prices" in the quick menu to see all active Hotspot packages and prices.', 'plan,plans,price,prices,package,packages,buy,renew'],
             ['Forgot username or password?', 'Send us your registered phone number or full name here and a support agent will help recover your account.', 'forgot,password,username,reset,login'],
             ['How to renew or buy a plan?', 'Check "Plans & Prices" to pick a package, then pay via voucher or contact support here for assistance.', 'renew,extend,expired,recharge,topup,payment'],
+            ['Can I use my account on another device?', 'Disconnect from your current device first before logging in on another device, or contact support if your MAC is locked.', 'device,another,share,mac,two devices'],
+            ['How to contact support directly?', 'Fill in your name and phone number to start a live chat with our support team anytime.', 'contact,agent,human,call,support,help'],
         ];
         foreach ($defaults as $i => $d) {
             $row = ORM::for_table('tbl_cpchat_faqs')->create();
@@ -891,6 +894,35 @@ function cpchat_seed_faqs()
             $row->keywords = $d[2];
             $row->sort = $i + 1;
             $row->enabled = 1;
+            $row->created_at = date('Y-m-d H:i:s');
+            $row->save();
+        }
+    } catch (Throwable $e) {
+        // ignore if table not ready
+    }
+}
+
+function cpchat_seed_canned()
+{
+    try {
+        $count = (int) ORM::for_table('tbl_cpchat_canned')->count();
+        if ($count > 0) {
+            return;
+        }
+        $defaults = [
+            ['Greeting', 'Hi {{name}}! Thanks for reaching out to support. How can I help you today?'],
+            ['Check Voucher', 'Hi {{name}}, please share your voucher code and I will verify its status right away.'],
+            ['Plan Status', 'Hi {{name}}, your account ({{username}}) is on {{plan}} and expires on {{expiry}}.'],
+            ['Slow Connection', 'Please try disconnecting from Wi-Fi for 10 seconds and reconnecting. Let me know if the speed improves!'],
+            ['Login Page Fix', 'If the hotspot login page does not open, open your browser and go to http://1.1.1.1 or http://neverssl.com.'],
+            ['Payment Received', 'We have received your payment and your account is now active. Enjoy browsing!'],
+            ['Closing / Solved', 'Glad we could help, {{name}}! Feel free to message us anytime if you need anything else.'],
+        ];
+        foreach ($defaults as $i => $d) {
+            $row = ORM::for_table('tbl_cpchat_canned')->create();
+            $row->title = $d[0];
+            $row->body = $d[1];
+            $row->sort = $i + 1;
             $row->created_at = date('Y-m-d H:i:s');
             $row->save();
         }
@@ -1946,6 +1978,7 @@ function cpchat_page($title, $manageOnly = false)
     }
     $install = cpchat_install();
     cpchat_seed_faqs();
+    cpchat_seed_canned();
     cpchat_cleanup_old();
     $ui->assign('install_error', ($install === true) ? '' : $install);
     $ui->assign('can_manage', cpchat_can_manage($admin));
@@ -2080,7 +2113,11 @@ function captivePortalChatSettings()
         }
         if ($action === 'canned_delete') {
             cpchat_canned_delete((int) _post('canned_id', 0));
-            r2(cpchat_url('captivePortalChatSettings'), 's', Lang::T('Deleted'));
+            r2(cpchat_url('captivePortalChatSettings') . '#tabCanned', 's', Lang::T('Deleted'));
+        }
+        if ($action === 'canned_seed') {
+            cpchat_seed_canned();
+            r2(cpchat_url('captivePortalChatSettings') . '#tabCanned', 's', Lang::T('Default canned replies loaded'));
         }
         if ($action === 'faq_add') {
             $id = (int) _post('faq_id', 0);
