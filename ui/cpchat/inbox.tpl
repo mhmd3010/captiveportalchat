@@ -1,243 +1,215 @@
 {include file="sections/header.tpl"}
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="panel panel-primary panel-hovered panel-stacked mb30">
-            <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-                    <strong style="margin-right:6px;"><i class="fa fa-comments"></i> {Lang::T('Inbox')}</strong>
-                    {if $open_now}
-                        <span class="label label-success"><i class="fa fa-circle"></i> {Lang::T('Online')}</span>
-                    {else}
-                        <span class="label label-warning" title="{$hours_label|escape:'html'}"><i class="fa fa-moon-o"></i> {Lang::T('Offline')}</span>
-                    {/if}
-                    <span class="label label-info" title="{Lang::T('Open chats')}">{Lang::T('Open')}: {$stats.open|default:0}</span>
-                    <span class="label label-warning" title="{Lang::T('Waiting for a reply')}">{Lang::T('Waiting')}: {$stats.waiting|default:0}</span>
-                    <span class="label label-danger" title="{Lang::T('Unread messages')}">{Lang::T('Unread')}: {$stats.unread|default:0}</span>
+<div class="cp-page">
+    <div class="cp-head">
+        <div class="cp-head-title">
+            <h2><i class="fa fa-inbox" style="color:#2563eb;margin-right:6px;"></i> {Lang::T('Inbox')}</h2>
+            {if $open_now}
+                <span class="cp-pill cp-pill-ok"><i class="fa fa-circle" style="font-size:8px;"></i> {Lang::T('Online')}</span>
+            {else}
+                <span class="cp-pill cp-pill-warn" title="{$hours_label|escape:'html'}"><i class="fa fa-moon-o"></i> {Lang::T('Offline')}</span>
+            {/if}
+            <span class="cp-pill cp-pill-info">{Lang::T('Open')}: {$stats.open|default:0}</span>
+            <span class="cp-pill cp-pill-warn">{Lang::T('Waiting')}: {$stats.waiting|default:0}</span>
+            <span class="cp-pill cp-pill-bad">{Lang::T('Unread')}: {$stats.unread|default:0}</span>
+        </div>
+        <div class="cp-head-actions">
+            <a href="{$_url}plugin/captivePortalChat" class="cp-btn"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
+            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
+            <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="cp-btn"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
+        </div>
+    </div>
+
+    {if $install_error neq ''}
+        <div class="cp-banner cp-banner-bad">
+            <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
+        </div>
+    {/if}
+    {if $navbar_state.status neq 'installed'}
+        <div class="cp-banner cp-banner-warn">
+            <span><i class="fa fa-bell-o"></i> {Lang::T('The navbar notification bell is not installed yet.')}</span>
+            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('Install it')}</a>
+        </div>
+    {/if}
+    {if !$open_now && $s.hours_enabled}
+        <div class="cp-banner cp-banner-info">
+            <span><i class="fa fa-clock-o"></i> {Lang::T('Outside support hours')} &mdash; {$hours_label|escape:'html'}. {Lang::T('Customers see the away message until the team is back.')}</span>
+        </div>
+    {/if}
+
+    <div class="cp-split">
+        <div id="cpchatListView" class="cp-split-list">
+            <div class="cp-card" style="margin-bottom:0;">
+                <div class="cp-card-head" style="display:block;">
+                    <input type="text" id="cpchatSearch" class="form-control input-sm"
+                        value="{$filters.q|escape:'html'}" placeholder="{Lang::T('Search name, phone, mac, ip, tag or message')}">
+                    <div class="cp-filters">
+                        <select id="cpchatStatus" class="form-control input-sm">
+                            <option value="">{Lang::T('Any status')}</option>
+                            <option value="open" {if $filters.status eq 'open'}selected{/if}>{Lang::T('Open only')}</option>
+                            <option value="closed" {if $filters.status eq 'closed'}selected{/if}>{Lang::T('Closed only')}</option>
+                        </select>
+                        <select id="cpchatAssigned" class="form-control input-sm">
+                            <option value="">{Lang::T('Everyone')}</option>
+                            <option value="unassigned" {if $filters.assigned eq 'unassigned'}selected{/if}>{Lang::T('Unassigned')}</option>
+                            <option value="me" {if $filters.assigned eq 'me'}selected{/if}>{Lang::T('Assigned to me')}</option>
+                            {foreach $agents as $a}
+                                <option value="{$a.id}" {if $filters.assigned eq $a.id}selected{/if}>{$a.name|escape:'html'}</option>
+                            {/foreach}
+                        </select>
+                        <select id="cpchatRouter" class="form-control input-sm">
+                            <option value="">{Lang::T('All routers')}</option>
+                            {foreach $routers as $r}
+                                <option value="{$r|escape:'html'}" {if $filters.router eq $r}selected{/if}>{$r|escape:'html'}</option>
+                            {/foreach}
+                        </select>
+                        <select id="cpchatTag" class="form-control input-sm">
+                            <option value="">{Lang::T('All tags')}</option>
+                            {foreach $tagOptions as $t}
+                                <option value="{$t|escape:'html'}" {if $filters.tag eq $t}selected{/if}>{$t|escape:'html'}</option>
+                            {/foreach}
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-weight:500;font-size:12px;">
+                        <label style="margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
+                            <input type="checkbox" id="cpchatSpam" value="1"> {Lang::T('Spam')}
+                        </label>
+                        <div style="display:flex;gap:4px;">
+                            <button type="button" class="cp-btn cp-btn-sm" id="cpchatExportCsv" title="{Lang::T('Export this list as CSV')}"><i class="fa fa-file-text-o"></i> CSV</button>
+                            <button type="button" class="cp-btn cp-btn-sm" id="cpchatExportPdf" title="{Lang::T('Export this list as PDF')}"><i class="fa fa-file-pdf-o"></i> PDF</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="btn-group">
-                    <a href="{$_url}plugin/captivePortalChat" class="btn btn-default btn-xs"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
-                    <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-default btn-xs"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
-                    <a href="{$_url}plugin/captivePortalChatSettings#tabCanned" class="btn btn-default btn-xs"><i class="fa fa-reply"></i> {Lang::T('Canned replies')}</a>
+                <div id="cpchatList" class="cp-conv-list">
+                    {foreach $conversations as $c}
+                        <a href="#" class="cp-conv-item cpchat-conv{if $c.id eq $active_id} is-active{/if}{if $c.is_spam} is-spam{/if}" data-id="{$c.id}">
+                            <div class="cp-conv-top">
+                                <strong>{$c.name|escape:'html'} <small style="font-weight:500;color:var(--cpchat-text-muted);">{$c.phone|escape:'html'}</small></strong>
+                                <small style="color:var(--cpchat-text-muted);white-space:nowrap;">{$c.last_ago|escape:'html'}</small>
+                            </div>
+                            <div class="cp-conv-sub">
+                                {if $c.username neq ''}<i class="fa fa-user"></i> {$c.username|escape:'html'} &middot; {/if}
+                                {if $c.mac neq ''}<i class="fa fa-wifi"></i> {$c.mac|escape:'html'}{/if}
+                                {if $c.router neq ''} &middot; <i class="fa fa-server"></i> {$c.router|escape:'html'}{/if}
+                            </div>
+                            {if $c.tags|@count > 0 || $c.assigned_name neq '' || $c.is_spam || $c.close_reason neq ''}
+                                <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">
+                                    {foreach $c.tags as $t}<span class="label label-default">{$t|escape:'html'}</span>{/foreach}
+                                    {if $c.assigned_name neq ''}<span class="label label-info"><i class="fa fa-headphones"></i> {$c.assigned_name|escape:'html'}</span>{/if}
+                                    {if $c.is_spam}<span class="label label-danger">{Lang::T('Spam')}</span>{/if}
+                                    {if $c.close_reason neq ''}<span class="label label-warning">{$c.close_reason|escape:'html'}</span>{/if}
+                                </div>
+                            {/if}
+                            <div class="cp-conv-preview">
+                                {if $c.unread_admin > 0}<span class="badge bg-red">{$c.unread_admin}</span>{/if}
+                                <span style="overflow:hidden;text-overflow:ellipsis;">{$c.last_body|escape:'html'|truncate:60}</span>
+                            </div>
+                        </a>
+                    {/foreach}
+                    {if $conversations|@count eq 0}
+                        <div style="padding:28px 16px;text-align:center;color:var(--cpchat-text-muted);font-size:13px;">{Lang::T('No chats match these filters.')}</div>
+                    {/if}
                 </div>
             </div>
-            <div class="panel-body">
+        </div>
 
-                {if $install_error neq ''}
-                    <div class="alert alert-danger">
-                        {Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}
-                    </div>
-                {/if}
-                {if $navbar_state.status neq 'installed'}
-                    <div class="alert alert-warning">
-                        {Lang::T('The navbar notification bell is not installed yet.')}
-                        <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-primary btn-xs" style="margin-left:10px;">{Lang::T('Install it')}</a>
-                    </div>
-                {/if}
-                {if !$open_now && $s.hours_enabled}
-                    <div class="alert alert-info">
-                        <i class="fa fa-clock-o"></i> {Lang::T('Outside support hours')} &mdash; {$hours_label|escape:'html'}.
-                        {Lang::T('Customers see the away message until the team is back.')}
-                    </div>
-                {/if}
-
-                <div class="cpchat-split">
-                <div id="cpchatListView">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <input type="text" id="cpchatSearch" class="form-control input-sm"
-                                value="{$filters.q|escape:'html'}" placeholder="{Lang::T('Search name, phone, mac, ip, tag or message')}">
-                        </div>
-                        <div class="panel-body">
-                            <div class="row">
-                                <div class="col-xs-6 col-sm-3" style="margin-bottom:6px;">
-                                    <select id="cpchatStatus" class="form-control input-sm">
-                                        <option value="">{Lang::T('Any status')}</option>
-                                        <option value="open" {if $filters.status eq 'open'}selected{/if}>{Lang::T('Open only')}</option>
-                                        <option value="closed" {if $filters.status eq 'closed'}selected{/if}>{Lang::T('Closed only')}</option>
-                                    </select>
-                                </div>
-                                <div class="col-xs-6 col-sm-3" style="margin-bottom:6px;">
-                                    <select id="cpchatAssigned" class="form-control input-sm">
-                                        <option value="">{Lang::T('Everyone')}</option>
-                                        <option value="unassigned" {if $filters.assigned eq 'unassigned'}selected{/if}>{Lang::T('Unassigned')}</option>
-                                        <option value="me" {if $filters.assigned eq 'me'}selected{/if}>{Lang::T('Assigned to me')}</option>
-                                        {foreach $agents as $a}
-                                            <option value="{$a.id}" {if $filters.assigned eq $a.id}selected{/if}>{$a.name|escape:'html'}</option>
-                                        {/foreach}
-                                    </select>
-                                </div>
-                                <div class="col-xs-6 col-sm-3" style="margin-bottom:6px;">
-                                    <select id="cpchatRouter" class="form-control input-sm">
-                                        <option value="">{Lang::T('All routers')}</option>
-                                        {foreach $routers as $r}
-                                            <option value="{$r|escape:'html'}" {if $filters.router eq $r}selected{/if}>{$r|escape:'html'}</option>
-                                        {/foreach}
-                                    </select>
-                                </div>
-                                <div class="col-xs-6 col-sm-3" style="margin-bottom:6px;">
-                                    <select id="cpchatTag" class="form-control input-sm">
-                                        <option value="">{Lang::T('All tags')}</option>
-                                        {foreach $tagOptions as $t}
-                                            <option value="{$t|escape:'html'}" {if $filters.tag eq $t}selected{/if}>{$t|escape:'html'}</option>
-                                        {/foreach}
-                                    </select>
-                                </div>
-                            </div>
-                            <div style="margin-top:8px;">
-                                <label style="font-weight:normal;margin:0;">
-                                    <input type="checkbox" id="cpchatSpam" value="1"> {Lang::T('Spam')}
-                                </label>
-                                <span class="pull-right">
-                                    <button type="button" class="btn btn-default btn-xs" id="cpchatExportCsv" title="{Lang::T('Export this list as CSV')}">
-                                        <i class="fa fa-file-text-o"></i> CSV
-                                    </button>
-                                    <button type="button" class="btn btn-default btn-xs" id="cpchatExportPdf" title="{Lang::T('Export this list as PDF')}">
-                                        <i class="fa fa-file-pdf-o"></i> PDF
-                                    </button>
-                                </span>
-                            </div>
-                        </div>
-                        <div id="cpchatList" class="list-group" style="margin:0;border:0;border-radius:0;">
-                            {foreach $conversations as $c}
-                                <a href="#" class="list-group-item cpchat-conv{if $c.id eq $active_id} list-group-item-info{/if}{if $c.is_spam} list-group-item-danger{/if}" data-id="{$c.id}">
-                                    <div class="pull-right"><small class="text-muted">{$c.last_ago|escape:'html'}</small></div>
-                                    <strong>{$c.name|escape:'html'}</strong> <small class="text-muted">{$c.phone|escape:'html'}</small>
-                                    <div style="clear:both;">
-                                        {if $c.username neq ''}<small class="text-muted"><i class="fa fa-user"></i> {$c.username|escape:'html'}</small> &nbsp;{/if}
-                                        {if $c.mac neq ''}<small class="text-muted"><i class="fa fa-wifi"></i> {$c.mac|escape:'html'}</small>{/if}
-                                        {if $c.router neq ''} &nbsp;<small class="text-muted"><i class="fa fa-server"></i> {$c.router|escape:'html'}</small>{/if}
-                                    </div>
-                                    {if $c.tags|@count > 0 || $c.assigned_name neq '' || $c.is_spam || $c.close_reason neq ''}
-                                        <div style="margin-top:3px;">
-                                            {foreach $c.tags as $t}<span class="label label-default">{$t|escape:'html'}</span> {/foreach}
-                                            {if $c.assigned_name neq ''}<span class="label label-info"><i class="fa fa-headphones"></i> {$c.assigned_name|escape:'html'}</span> {/if}
-                                            {if $c.is_spam}<span class="label label-danger">{Lang::T('Spam')}</span> {/if}
-                                            {if $c.close_reason neq ''}<span class="label label-warning">{$c.close_reason|escape:'html'}</span>{/if}
-                                        </div>
-                                    {/if}
-                                    <div style="margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                        {if $c.unread_admin > 0}<span class="badge bg-red">{$c.unread_admin}</span> {/if}
-                                        <small>{$c.last_body|escape:'html'|truncate:60}</small>
-                                    </div>
-                                </a>
-                            {/foreach}
-                            {if $conversations|@count eq 0}
-                                <div class="list-group-item text-center text-muted">{Lang::T('No chats match these filters.')}</div>
-                            {/if}
-                        </div>
-                    </div>
-                </div>
-                <div id="cpchatThreadView" style="display:none;">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <div class="pull-right" style="margin-left:8px;">
-                                <select id="cpchatAssign" class="form-control input-sm" style="width:auto;max-width:160px;display:inline-block;vertical-align:middle;" disabled>
-                                    <option value="0">{Lang::T('Unassigned')}</option>
-                                    <option value="me">{Lang::T('Assign to me')}</option>
-                                    {foreach $agents as $a}
-                                        <option value="{$a.id}">{$a.name|escape:'html'}</option>
-                                    {/foreach}
-                                </select>
-                                <button type="button" class="btn btn-default btn-xs" id="cpchatTagBtn" disabled title="{Lang::T('Edit tags')}" style="vertical-align:middle;">
-                                    <i class="fa fa-tag"></i>
-                                </button>
-                                <div class="btn-group" style="display:inline-block;vertical-align:middle;">
-                                    <button type="button" class="btn btn-default btn-xs dropdown-toggle" id="cpchatMoreBtn" disabled data-bs-toggle="dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fa fa-ellipsis-h"></i> <span class="caret"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-right">
-                                        <li><a class="dropdown-item" href="#" id="cpchatSpamBtn"><i class="fa fa-ban"></i> {Lang::T('Mark as spam')}</a></li>
-                                        <li><a class="dropdown-item" href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>
-                                        <li role="separator" class="divider dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" id="cpchatChatCsv"><i class="fa fa-file-text-o"></i> {Lang::T('Transcript CSV')}</a></li>
-                                        <li><a class="dropdown-item" href="#" id="cpchatChatPdf"><i class="fa fa-file-pdf-o"></i> {Lang::T('Transcript PDF')}</a></li>
-                                    </ul>
-                                </div>
-                                <button type="button" class="btn btn-primary btn-xs" id="cpchatToggleStatus" style="vertical-align:middle;" {if !$active}disabled{/if}>
-                                    {if $active}{if $active.status eq 'open'}{Lang::T('Close')}{else}{Lang::T('Reopen')}{/if}{else}{Lang::T('Close')}{/if}
-                                </button>
-                            </div>
-                            <button type="button" class="btn btn-default btn-xs" id="cpchatBackBtn" style="vertical-align:middle;"><i class="fa fa-arrow-left"></i> {Lang::T('Back')}</button>
-                            <span id="cpchatThreadTitle" style="margin-left:8px;font-size:14px;vertical-align:middle;">
-                                {if $active}
-                                    {$active.name|escape:'html'} <small>{$active.phone|escape:'html'}</small>
-                                {else}
-                                    {Lang::T('Select a chat')}
-                                {/if}
-                            </span>
-                            <span class="label label-default" id="cpchatThreadStatus" style="margin-left:6px;vertical-align:middle;">{if $active}{$active.status}{else}&ndash;{/if}</span>
-                        </div>
-
-                        <div class="panel-footer" id="cpchatMetaBar"{if !$active} style="display:none;padding-top:6px;padding-bottom:6px;"{else} style="padding-top:6px;padding-bottom:6px;"{/if}>
+        <div id="cpchatThreadView" class="cp-split-thread" style="display:none;">
+            <div class="cp-card" style="margin-bottom:0;">
+                <div class="cp-card-head">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="cp-btn cp-btn-sm cp-back-btn" id="cpchatBackBtn"><i class="fa fa-arrow-left"></i> {Lang::T('Back')}</button>
+                        <span id="cpchatThreadTitle" style="font-size:15px;font-weight:700;">
                             {if $active}
-                                <div class="row" style="margin:0;">
-                                    <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-mobile"></i> {Lang::T('Phone')}:</small> <code>{$active.phone|escape:'html'}</code></div>
-                                    <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-user"></i> {Lang::T('Name')}:</small> <code>{$active.name|escape:'html'}</code></div>
-                                    {if $active.mac neq ''}
-                                        <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-wifi"></i> MAC:</small> <code>{$active.mac|escape:'html'}</code></div>
-                                    {/if}
-                                    {if $active.ip neq ''}
-                                        <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-globe"></i> IP:</small> <code>{$active.ip|escape:'html'}</code></div>
-                                    {/if}
-                                    {if $active.username neq ''}
-                                        <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-sign-in"></i> {Lang::T('Username')}:</small> <code>{$active.username|escape:'html'}</code></div>
-                                    {/if}
-                                    {if $active.router neq ''}
-                                        <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-server"></i> {Lang::T('Router')}:</small> <code>{$active.router|escape:'html'}</code></div>
-                                    {/if}
-                                    {if $active.page neq ''}
-                                        <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-file-o"></i> {Lang::T('Page')}:</small> <code>{$active.page|escape:'html'}</code></div>
-                                    {/if}
-                                    <div class="col-xs-6 col-sm-4 col-md-2"><small class="text-muted"><i class="fa fa-clock-o"></i> {Lang::T('Created')}:</small> <code>{Lang::dateTimeFormat($active.created_at)}</code></div>
-                                </div>
-                            {/if}
-                        </div>
-
-                        <div id="cpchatThread" class="panel-body" style="background:var(--cpchat-bg-thread,#f4f6f9);min-height:200px;">
-                            {if $active}
-                                {foreach $thread as $m}
-                                    {if $m.sender eq 'system'}
-                                        <div class="text-center" style="margin:6px 0;">
-                                            <small class="text-muted">{$m.body|escape:'html'|nl2br}</small>
-                                        </div>
-                                    {else}
-                                        <div class="{if $m.sender eq 'admin'}text-right{/if}" style="margin-bottom:8px;">
-                                            <div class="well well-sm{if $m.sender eq 'admin'} cpchat-admin-bubble{/if}" style="display:inline-block;max-width:75%;text-align:left;margin:0;word-break:break-word;{if $m.sender eq 'admin'}background-color:#337ab7;border-color:#2e6da4;color:#fff;{/if}">
-                                                {$m.body|escape:'html'|nl2br}
-                                                <small style="display:block;margin-top:2px;{if $m.sender eq 'admin'}color:rgba(255,255,255,.85);{else}color:#777;{/if}">{if $m.sender eq 'admin' && $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}</small>
-                                            </div>
-                                        </div>
-                                    {/if}
-                                {/foreach}
+                                {$active.name|escape:'html'} <small style="font-weight:500;color:var(--cpchat-text-muted);">{$active.phone|escape:'html'}</small>
                             {else}
-                                <div class="text-muted text-center" style="padding:30px 10px;">
-                                    <i class="fa fa-comments-o" style="font-size:34px;display:block;margin-bottom:8px;"></i>
-                                    {Lang::T('Select a chat from the list.')}
-                                </div>
+                                {Lang::T('Select a chat')}
                             {/if}
-                        </div>
-
-                        <div class="panel-footer">
-                            <div style="margin-bottom:8px;">
-                                <select id="cpchatCanned" class="form-control input-sm" style="width:220px;max-width:100%;display:inline-block;" disabled>
-                                    <option value="">{Lang::T('Canned replies')}…</option>
-                                    {foreach $canned as $k}
-                                        <option value="{$k.body|escape:'html'}">{$k.title|escape:'html'|truncate:48}</option>
-                                    {/foreach}
-                                </select>
-                                <span id="cpchatTagList" class="pull-right">
-                                    {if $active}{foreach $active.tags as $t}<span class="label label-default">{$t|escape:'html'}</span> {/foreach}{/if}
-                                </span>
-                            </div>
-                            <textarea id="cpchatReply" class="form-control" rows="2"
-                                placeholder="{Lang::T('Type your reply, Enter to send')}"{if !$active} disabled{/if}></textarea>
-                            <button type="button" class="btn btn-primary btn-block" id="cpchatSendReply" style="margin-top:8px;"{if !$active} disabled{/if}>
-                                <i class="fa fa-paper-plane"></i> {Lang::T('Reply')}
+                        </span>
+                        <span class="label label-default" id="cpchatThreadStatus">{if $active}{$active.status}{else}&ndash;{/if}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <select id="cpchatAssign" class="form-control input-sm" style="width:auto;max-width:150px;" disabled>
+                            <option value="0">{Lang::T('Unassigned')}</option>
+                            <option value="me">{Lang::T('Assign to me')}</option>
+                            {foreach $agents as $a}
+                                <option value="{$a.id}">{$a.name|escape:'html'}</option>
+                            {/foreach}
+                        </select>
+                        <button type="button" class="cp-btn cp-btn-sm" id="cpchatTagBtn" disabled title="{Lang::T('Edit tags')}"><i class="fa fa-tag"></i></button>
+                        <div class="btn-group" style="display:inline-block;">
+                            <button type="button" class="cp-btn cp-btn-sm dropdown-toggle" id="cpchatMoreBtn" disabled data-bs-toggle="dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fa fa-ellipsis-h"></i>
                             </button>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-right">
+                                <li><a class="dropdown-item" href="#" id="cpchatSpamBtn"><i class="fa fa-ban"></i> {Lang::T('Mark as spam')}</a></li>
+                                <li><a class="dropdown-item" href="#" id="cpchatBlockBtn"><i class="fa fa-user-times"></i> {Lang::T('Block this visitor')}</a></li>
+                                <li role="separator" class="divider dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="cpchatChatCsv"><i class="fa fa-file-text-o"></i> {Lang::T('Transcript CSV')}</a></li>
+                                <li><a class="dropdown-item" href="#" id="cpchatChatPdf"><i class="fa fa-file-pdf-o"></i> {Lang::T('Transcript PDF')}</a></li>
+                            </ul>
                         </div>
+                        <button type="button" class="cp-btn cp-btn-primary cp-btn-sm" id="cpchatToggleStatus" {if !$active}disabled{/if}>
+                            {if $active}{if $active.status eq 'open'}{Lang::T('Close')}{else}{Lang::T('Reopen')}{/if}{else}{Lang::T('Close')}{/if}
+                        </button>
                     </div>
                 </div>
+
+                <div class="cp-meta-bar" id="cpchatMetaBar"{if !$active} style="display:none;"{/if}>
+                    {if $active}
+                        <span class="cp-meta-chip"><i class="fa fa-mobile"></i> {Lang::T('Phone')}: <b>{$active.phone|escape:'html'}</b></span>
+                        <span class="cp-meta-chip"><i class="fa fa-user"></i> {Lang::T('Name')}: <b>{$active.name|escape:'html'}</b></span>
+                        {if $active.mac neq ''}<span class="cp-meta-chip"><i class="fa fa-wifi"></i> MAC: <b>{$active.mac|escape:'html'}</b></span>{/if}
+                        {if $active.ip neq ''}<span class="cp-meta-chip"><i class="fa fa-globe"></i> IP: <b>{$active.ip|escape:'html'}</b></span>{/if}
+                        {if $active.username neq ''}<span class="cp-meta-chip"><i class="fa fa-sign-in"></i> {Lang::T('Username')}: <b>{$active.username|escape:'html'}</b></span>{/if}
+                        {if $active.router neq ''}<span class="cp-meta-chip"><i class="fa fa-server"></i> {Lang::T('Router')}: <b>{$active.router|escape:'html'}</b></span>{/if}
+                        {if $active.page neq ''}<span class="cp-meta-chip"><i class="fa fa-file-o"></i> {Lang::T('Page')}: <b>{$active.page|escape:'html'}</b></span>{/if}
+                        <span class="cp-meta-chip"><i class="fa fa-clock-o"></i> {Lang::T('Created')}: <b>{Lang::dateTimeFormat($active.created_at)}</b></span>
+                    {/if}
+                </div>
+
+                <div id="cpchatThread" class="cp-thread">
+                    {if $active}
+                        {foreach $thread as $m}
+                            {if $m.sender eq 'system'}
+                                <div class="text-center" style="margin:6px 0;">
+                                    <small style="color:var(--cpchat-text-muted);">{$m.body|escape:'html'|nl2br}</small>
+                                </div>
+                            {else}
+                                <div class="{if $m.sender eq 'admin'}text-right{/if}" style="margin-bottom:10px;">
+                                    <div class="well well-sm{if $m.sender eq 'admin'} cpchat-admin-bubble{/if}" style="display:inline-block;max-width:78%;text-align:left;margin:0;word-break:break-word;">
+                                        {$m.body|escape:'html'|nl2br}
+                                        <small style="display:block;margin-top:4px;opacity:.75;">{if $m.sender eq 'admin' && $m.sender_name neq ''}{$m.sender_name|escape:'html'} · {/if}{$m.time}</small>
+                                    </div>
+                                </div>
+                            {/if}
+                        {/foreach}
+                    {else}
+                        <div style="padding:48px 16px;text-align:center;color:var(--cpchat-text-muted);">
+                            <i class="fa fa-comments-o" style="font-size:38px;display:block;margin-bottom:10px;opacity:.5;"></i>
+                            {Lang::T('Select a chat from the list.')}
+                        </div>
+                    {/if}
+                </div>
+
+                <div class="cp-composer">
+                    <div class="cp-composer-top">
+                        <select id="cpchatCanned" class="form-control input-sm" style="width:220px;max-width:100%;" disabled>
+                            <option value="">{Lang::T('Canned replies')}…</option>
+                            {foreach $canned as $k}
+                                <option value="{$k.body|escape:'html'}">{$k.title|escape:'html'|truncate:48}</option>
+                            {/foreach}
+                        </select>
+                        <span id="cpchatTagList" style="display:flex;flex-wrap:wrap;gap:4px;">
+                            {if $active}{foreach $active.tags as $t}<span class="label label-default">{$t|escape:'html'}</span>{/foreach}{/if}
+                        </span>
+                    </div>
+                    <div class="cp-composer-bar">
+                        <textarea id="cpchatReply" class="form-control" rows="2"
+                            placeholder="{Lang::T('Type your reply, Enter to send')}"{if !$active} disabled{/if}></textarea>
+                        <button type="button" class="cp-btn cp-btn-primary" id="cpchatSendReply"{if !$active} disabled{/if}>
+                            <i class="fa fa-paper-plane"></i> {Lang::T('Reply')}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

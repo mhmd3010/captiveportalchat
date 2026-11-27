@@ -1,347 +1,156 @@
 {include file="sections/header.tpl"}
 
-<div class="row">
-    <div class="col-sm-12 col-md-12">
-        <div class="panel panel-primary panel-hovered panel-stacked mb30">
-            <div class="panel-heading">
-                {Lang::T('Captive Portal Chat')}
-                <div class="btn-group pull-right">
-                    {if $open_now}
-                        <span class="label label-success" style="margin-right:6px;"><i class="fa fa-circle"></i> {Lang::T('Online')}</span>
-                    {else}
-                        <span class="label label-warning" style="margin-right:6px;" title="{$hours_label|escape:'html'}"><i class="fa fa-moon-o"></i> {Lang::T('Offline')}</span>
+<div class="cp-page">
+    <div class="cp-head">
+        <div class="cp-head-title">
+            <h2><i class="fa fa-comments" style="color:#2563eb;margin-right:6px;"></i> {Lang::T('Captive Portal Chat')}</h2>
+            {if $open_now}
+                <span class="cp-pill cp-pill-ok"><i class="fa fa-circle" style="font-size:8px;"></i> {Lang::T('Online')}</span>
+            {else}
+                <span class="cp-pill cp-pill-warn" title="{$hours_label|escape:'html'}"><i class="fa fa-moon-o"></i> {Lang::T('Offline')}</span>
+            {/if}
+        </div>
+        <div class="cp-head-actions">
+            <a href="{$_url}plugin/captivePortalChatInbox" class="cp-btn cp-btn-primary"><i class="fa fa-inbox"></i> {Lang::T('Open Inbox')}</a>
+            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
+        </div>
+    </div>
+
+    {if $install_error neq ''}
+        <div class="cp-banner cp-banner-bad">
+            <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
+        </div>
+    {/if}
+    {if $navbar_state.status neq 'installed'}
+        <div class="cp-banner cp-banner-warn">
+            <span><i class="fa fa-bell-o"></i> {Lang::T('The navbar notification bell is not installed yet.')}</span>
+            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('Install it')}</a>
+        </div>
+    {/if}
+    {if !$s.enabled}
+        <div class="cp-banner cp-banner-info">
+            <span><i class="fa fa-info-circle"></i> {Lang::T('Chat is currently disabled. Customers cannot start new chats.')}</span>
+            <a href="{$_url}plugin/captivePortalChatSettings" class="cp-btn cp-btn-sm">{Lang::T('Enable it')}</a>
+        </div>
+    {/if}
+
+    <div class="cp-kpis">
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.open|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Open chats')}</div></div>
+            <div class="cp-kpi-ico cp-ico-blue"><i class="fa fa-comments-o"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.waiting|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Waiting for a reply')}</div></div>
+            <div class="cp-kpi-ico cp-ico-amber"><i class="fa fa-clock-o"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.unread|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Unread messages')}</div></div>
+            <div class="cp-kpi-ico cp-ico-red"><i class="fa fa-bell-o"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.today|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Chats started today')}</div></div>
+            <div class="cp-kpi-ico cp-ico-green"><i class="fa fa-plus"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.closed|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Closed chats')}</div></div>
+            <div class="cp-kpi-ico cp-ico-teal"><i class="fa fa-check"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{if $stats.avg_first_reply !== null}{$stats.avg_first_reply} {Lang::T('min')}{else}&ndash;{/if}</div><div class="cp-kpi-lbl">{Lang::T('Average first reply')}</div></div>
+            <div class="cp-kpi-ico cp-ico-purple"><i class="fa fa-bolt"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$spam.hits_24h|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Blocked attempts (24h)')}</div></div>
+            <div class="cp-kpi-ico cp-ico-red"><i class="fa fa-shield"></i></div>
+        </div>
+        <div class="cp-kpi">
+            <div><div class="cp-kpi-val">{$stats.messages|default:0}</div><div class="cp-kpi-lbl">{Lang::T('Messages in total')}</div></div>
+            <div class="cp-kpi-ico cp-ico-slate"><i class="fa fa-comments"></i></div>
+        </div>
+    </div>
+
+    <div class="cp-grid-2">
+        <div class="cp-card">
+            <div class="cp-card-head"><span><i class="fa fa-bar-chart"></i> {Lang::T('Last 14 days')}</span></div>
+            <div class="cp-card-body">
+                <div id="cpchatChart"></div>
+                {if $chart_empty}
+                    <p class="cp-help" style="text-align:center;margin-top:10px;">{Lang::T('No chats or messages in the last 14 days')}</p>
+                {/if}
+            </div>
+        </div>
+
+        <div class="cp-card">
+            <div class="cp-card-head"><span><i class="fa fa-user"></i> {Lang::T('Agent workload')}</span></div>
+            <div class="cp-card-body-flush cp-table-wrap">
+                <table class="cp-table">
+                    <thead>
+                        <tr>
+                            <th>{Lang::T('Agent')}</th>
+                            <th class="cp-tr">{Lang::T('Chats')}</th>
+                            <th class="cp-tr">{Lang::T('Open')}</th>
+                            <th class="cp-tr">{Lang::T('Unread')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {foreach $workload as $w}
+                            <tr>
+                                <td><a href="{$_url}plugin/captivePortalChatInbox&assigned={$w.id}"><b>{$w.name|escape:'html'}</b></a> <small style="color:var(--cpchat-text-muted);">{$w.type|escape:'html'}</small></td>
+                                <td class="cp-tr">{$w.total}</td>
+                                <td class="cp-tr">{$w.open_chats}</td>
+                                <td class="cp-tr">{$w.unread}</td>
+                            </tr>
+                        {/foreach}
+                        {if $workload|@count eq 0}
+                            <tr><td colspan="4" style="text-align:center;color:var(--cpchat-text-muted);">{Lang::T('No active agents')}</td></tr>
+                        {/if}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="cp-card">
+        <div class="cp-card-head">
+            <span><i class="fa fa-inbox"></i> {Lang::T('Latest chats')}</span>
+            <a class="cp-btn cp-btn-sm" href="{$_url}plugin/captivePortalChatInbox">{Lang::T('All chats')}</a>
+        </div>
+        <div class="cp-card-body-flush cp-table-wrap">
+            <table class="cp-table">
+                <thead>
+                    <tr>
+                        <th>{Lang::T('Customer')}</th>
+                        <th>{Lang::T('Last message')}</th>
+                        <th>{Lang::T('Tags')}</th>
+                        <th>{Lang::T('Agent')}</th>
+                        <th class="cp-tr">{Lang::T('Time')}</th>
+                        <th class="cp-tr">{Lang::T('Actions')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {foreach $latest as $c}
+                        <tr class="cpchat-row-link" data-url="{$_url}plugin/captivePortalChatInbox&id={$c.id}">
+                            <td>
+                                <a href="{$_url}plugin/captivePortalChatInbox&id={$c.id}"><b>{$c.name|escape:'html'}</b></a>
+                                <small style="color:var(--cpchat-text-muted);">{$c.phone|escape:'html'}</small>
+                                {if $c.status eq 'open'}<span class="label label-success">open</span>{else}<span class="label label-default">closed</span>{/if}
+                                {if $c.unread_admin > 0}<span class="badge bg-red">{$c.unread_admin}</span>{/if}
+                            </td>
+                            <td>{$c.last_body|escape:'html'|truncate:70}</td>
+                            <td>{foreach $c.tags as $t}<span class="label label-default" style="margin-right:2px;">{$t|escape:'html'}</span>{/foreach}</td>
+                            <td><small>{$c.assigned_name|escape:'html'|default:'&ndash;'}</small></td>
+                            <td class="cp-tr"><small>{$c.last_dt}</small></td>
+                            <td class="cp-tr" style="white-space:nowrap;">
+                                <a href="{$_url}plugin/captivePortalChatInbox&id={$c.id}" class="cp-btn cp-btn-primary cp-btn-sm">{Lang::T('View')}</a>
+                                <button type="button" class="cp-btn cp-btn-danger cp-btn-sm cpchat-del" data-id="{$c.id}">{Lang::T('Delete')}</button>
+                            </td>
+                        </tr>
+                    {/foreach}
+                    {if $latest|@count eq 0}
+                        <tr><td colspan="6" style="text-align:center;color:var(--cpchat-text-muted);padding:24px;">{Lang::T('No chats yet. Add the widget snippet to your hotspot login page.')}</td></tr>
                     {/if}
-                    <a href="{$_url}plugin/captivePortalChatInbox" class="btn btn-primary btn-xs"><i class="fa fa-inbox"></i> {Lang::T('Open Inbox')}</a>
-                    <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-default btn-xs"><i class="fa fa-cog"></i> {Lang::T('Settings')}</a>
-                </div>
-            </div>
-            <div class="panel-body">
-
-                {if $install_error neq ''}
-                    <div class="alert alert-danger">
-                        {Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}
-                    </div>
-                {/if}
-                {if $navbar_state.status neq 'installed'}
-                    <div class="alert alert-warning">
-                        {Lang::T('The navbar notification bell is not installed yet.')}
-                        <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-primary btn-xs" style="margin-left:10px;">{Lang::T('Install it')}</a>
-                    </div>
-                {/if}
-                {if !$s.enabled}
-                    <div class="alert alert-info">
-                        {Lang::T('Chat is currently disabled. Customers cannot start new chats.')}
-                        <a href="{$_url}plugin/captivePortalChatSettings" class="btn btn-default btn-xs" style="margin-left:10px;">{Lang::T('Enable it')}</a>
-                    </div>
-                {/if}
-
-                <div class="row">
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-aqua">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.open|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-comments-o"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Open chats')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-yellow">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.waiting|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-clock-o"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Waiting for a reply')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-red">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.unread|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-bell-o"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Unread messages')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-green">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.today|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-plus"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Chats started today')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-teal">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.closed|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-check"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Closed chats')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-purple">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{if $stats.avg_first_reply !== null}{$stats.avg_first_reply} {Lang::T('min')}{else}&ndash;{/if}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-clock-o"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Average first reply')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-maroon">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$spam.hits_24h|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-shield"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Blocked attempts (24h)')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-xs-6">
-                        <div class="small-box bg-gray">
-                            <div class="inner">
-                                <h4 class="text-bold" style="font-size: large;">{$stats.messages|default:0}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fa fa-comments"></i>
-                            </div>
-                            <div class="small-box-footer">{Lang::T('Messages in total')}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading"><i class="fa fa-bar-chart"></i> {Lang::T('Last 14 days')}</div>
-                            <div class="panel-body">
-                                <div id="cpchatChart"></div>
-                                {if $chart_empty}
-                                    <p class="text-muted text-center" style="margin-top:10px;">{Lang::T('No chats or messages in the last 14 days')}</p>
-                                {/if}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        {* Per-router breakdown: hidden for now, bring back later
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading"><i class="fa fa-server"></i> {Lang::T('Per router')}</div>
-                            <div class="panel-body" style="padding:0;">
-                                <table class="table table-bordered table-striped table-condensed" style="margin:0;">
-                                    <thead>
-                                        <tr>
-                                            <th>{Lang::T('Router')}</th>
-                                            <th class="text-right">{Lang::T('Chats')}</th>
-                                            <th class="text-right">{Lang::T('Open')}</th>
-                                            <th class="text-right">{Lang::T('Last')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {foreach $routers as $r}
-                                            <tr>
-                                                <td><a href="{$_url}plugin/captivePortalChatInbox&router={$r.router|escape:'url'}">{$r.router|escape:'html'|truncate:24}</a></td>
-                                                <td class="text-right">{$r.chats}</td>
-                                                <td class="text-right">{$r.open_chats}</td>
-                                                <td class="text-right"><small>{if $r.last_at}{$r.last_at|date_format:'%d/%m %H:%i'}{else}&ndash;{/if}</small></td>
-                                            </tr>
-                                        {/foreach}
-                                        {if $routers|@count eq 0}
-                                            <tr><td colspan="4" class="text-muted text-center">{Lang::T('No data yet')}</td></tr>
-                                        {/if}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        *}
-
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading"><i class="fa fa-user"></i> {Lang::T('Agent workload')}</div>
-                            <div class="panel-body" style="padding:0;">
-                                <table class="table table-bordered table-striped table-condensed" style="margin:0;">
-                                    <thead>
-                                        <tr>
-                                            <th>{Lang::T('Agent')}</th>
-                                            <th class="text-right">{Lang::T('Chats')}</th>
-                                            <th class="text-right">{Lang::T('Open')}</th>
-                                            <th class="text-right">{Lang::T('Unread')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {foreach $workload as $w}
-                                            <tr>
-                                                <td><a href="{$_url}plugin/captivePortalChatInbox&assigned={$w.id}">{$w.name|escape:'html'}</a> <small class="text-muted">{$w.type|escape:'html'}</small></td>
-                                                <td class="text-right">{$w.total}</td>
-                                                <td class="text-right">{$w.open_chats}</td>
-                                                <td class="text-right">{$w.unread}</td>
-                                            </tr>
-                                        {/foreach}
-                                        {if $workload|@count eq 0}
-                                            <tr><td colspan="4" class="text-muted text-center">{Lang::T('No active agents')}</td></tr>
-                                        {/if}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading">
-                                <i class="fa fa-inbox"></i> {Lang::T('Latest chats')}
-                                <div class="btn-group pull-right">
-                                    <a class="btn btn-default btn-xs" href="{$_url}plugin/captivePortalChatInbox">{Lang::T('All chats')}</a>
-                                </div>
-                            </div>
-                            <div class="panel-body" style="padding:0;">
-                                <div class="table-responsive">
-                                <table class="table table-bordered table-striped table-condensed" style="margin:0;">
-                                    <thead>
-                                        <tr>
-                                            <th>{Lang::T('Customer')}</th>
-                                            <th>{Lang::T('Last message')}</th>
-                                            <th>{Lang::T('Tags')}</th>
-                                            <th>{Lang::T('Agent')}</th>
-                                            <th class="text-right">{Lang::T('Time')}</th>
-                                            <th class="text-right">{Lang::T('Actions')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {foreach $latest as $c}
-                                            <tr class="cpchat-row-link" data-url="{$_url}plugin/captivePortalChatInbox&id={$c.id}">
-                                                <td>
-                                                    <a href="{$_url}plugin/captivePortalChatInbox&id={$c.id}">{$c.name|escape:'html'}</a>
-                                                    <small class="text-muted">{$c.phone|escape:'html'}</small>
-                                                    {if $c.status eq 'open'}<span class="label label-success">open</span>{else}<span class="label label-default">closed</span>{/if}
-                                                    {if $c.unread_admin > 0}<span class="badge bg-red">{$c.unread_admin}</span>{/if}
-                                                </td>
-                                                <td>{$c.last_body|escape:'html'|truncate:70}</td>
-                                                <td>{foreach $c.tags as $t}<span class="label label-default" style="margin-right:2px;">{$t|escape:'html'}</span>{/foreach}</td>
-                                                <td><small>{$c.assigned_name|escape:'html'|default:'&ndash;'}</small></td>
-                                                <td class="text-right"><small>{$c.last_dt}</small></td>
-                                                <td class="text-right" style="white-space:nowrap;">
-                                                    <a href="{$_url}plugin/captivePortalChatInbox&id={$c.id}" class="btn btn-primary btn-xs">{Lang::T('View')}</a>
-                                                    <button type="button" class="btn btn-danger btn-xs cpchat-del" data-id="{$c.id}">{Lang::T('Delete')}</button>
-                                                </td>
-                                            </tr>
-                                        {/foreach}
-                                        {if $latest|@count eq 0}
-                                            <tr><td colspan="6" class="text-muted text-center">{Lang::T('No chats yet. Add the widget snippet to your hotspot login page.')}</td></tr>
-                                        {/if}
-                                    </tbody>
-                                </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        {* Spam protection summary: hidden for now, bring back later
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading">
-                                <i class="fa fa-shield"></i> {Lang::T('Spam protection')}
-                                <div class="btn-group pull-right">
-                                    <a class="btn btn-default btn-xs" href="{$_url}plugin/captivePortalChatSettings">{Lang::T('Configure')}</a>
-                                </div>
-                            </div>
-                            <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Rejected in 24h')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$spam.hits_24h|default:0}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Currently blocked')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$spam.blocked|default:0}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Marked as spam')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$stats.spam|default:0}</b></div>
-                                </div>
-                                {if $spam.reasons|@count > 0}
-                                    <div style="margin:8px 0 4px;">
-                                        {foreach $spam.reasons as $r}
-                                            <span class="label label-warning" style="margin-right:4px;">{$r.reason|escape:'html'}: {$r.n}</span>
-                                        {/foreach}
-                                    </div>
-                                {/if}
-                                <table class="table table-bordered table-striped table-condensed" style="margin-top:8px;">
-                                    <thead>
-                                        <tr>
-                                            <th>{Lang::T('IP')}</th>
-                                            <th>{Lang::T('Reason')}</th>
-                                            <th class="text-right">{Lang::T('Time')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {foreach $spamlog as $l}
-                                            <tr>
-                                                <td><code>{$l.ip|escape:'html'|default:'-'}</code></td>
-                                                <td>{$l.reason|escape:'html'}</td>
-                                                <td class="text-right"><small>{Lang::dateTimeFormat($l.created_at)}</small></td>
-                                            </tr>
-                                        {/foreach}
-                                        {if $spamlog|@count eq 0}
-                                            <tr><td colspan="3" class="text-muted text-center">{Lang::T('No blocked attempts')}</td></tr>
-                                        {/if}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        *}
-
-                        {* Status box: hidden for now, bring back later
-                        <div class="panel panel-default mb20">
-                            <div class="panel-heading"><i class="fa fa-info-circle"></i> {Lang::T('Status')}</div>
-                            <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Plugin version')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$cpchat_version|escape:'html'}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Chat enabled')}</div>
-                                    <div class="col-xs-4 text-right"><b>{if $s.enabled}{Lang::T('Yes')}{else}{Lang::T('No')}{/if}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Support hours')}</div>
-                                    <div class="col-xs-4 text-right"><b>{if $s.hours_enabled}{$hours_label|escape:'html'}{else}{Lang::T('Always open')}{/if}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Navbar bell')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$navbar_state.status|escape:'html'}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Total chats')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$stats.total|default:0}</b></div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-xs-8 text-muted">{Lang::T('Last 7 days')}</div>
-                                    <div class="col-xs-4 text-right"><b>{$stats.week|default:0}</b></div>
-                                </div>
-                            </div>
-                        </div>
-                        *}
-                    </div>
-                </div>
-
-            </div>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

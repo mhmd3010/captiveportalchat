@@ -27,7 +27,7 @@ unset($cpchatRoles);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.1.3';
+$GLOBALS['captivePortalChat_version'] = '2.1.4';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -1578,7 +1578,7 @@ function cpchat_footer_credit()
 document.addEventListener("DOMContentLoaded", function () {
     var el = document.getElementById("version");
     if (el) {
-        el.innerHTML = "Captive Portal Chat v' . $version . ' | <a href=\"https://t.me/mhmd_3010\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation();\">Mahmud</a>";
+        el.innerHTML = "Captive Portal Chat | v' . $version . ' | <a href=\"https://t.me/mhmd_3010\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation();\">Mahmud</a>";
     }
 });
 </script>';

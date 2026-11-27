@@ -1,24 +1,25 @@
 {include file="sections/header.tpl"}
 
-<div class="row">
-    <div class="col-sm-12 col-md-12">
-        <div class="panel panel-primary panel-hovered panel-stacked mb30">
-            <div class="panel-heading">
-                {Lang::T('Captive Portal Chat Settings')}
-                <div class="btn-group pull-right">
-                    <a href="{$_url}plugin/captivePortalChat" class="btn btn-default btn-xs"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
-                    <a href="{$_url}plugin/captivePortalChatInbox" class="btn btn-default btn-xs"><i class="fa fa-inbox"></i> {Lang::T('Inbox')}</a>
-                </div>
-            </div>
-            <div class="panel-body">
+<div class="cp-page">
+    <div class="cp-head">
+        <div class="cp-head-title">
+            <h2><i class="fa fa-cog" style="color:#2563eb;margin-right:6px;"></i> {Lang::T('Captive Portal Chat Settings')}</h2>
+        </div>
+        <div class="cp-head-actions">
+            <a href="{$_url}plugin/captivePortalChat" class="cp-btn"><i class="fa fa-dashboard"></i> {Lang::T('Dashboard')}</a>
+            <a href="{$_url}plugin/captivePortalChatInbox" class="cp-btn cp-btn-primary"><i class="fa fa-inbox"></i> {Lang::T('Inbox')}</a>
+        </div>
+    </div>
 
-                {if $install_error neq ''}
-                    <div class="alert alert-danger">
-                        {Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}
-                    </div>
-                {/if}
+    {if $install_error neq ''}
+        <div class="cp-banner cp-banner-bad">
+            <span>{Lang::T('Chat tables could not be created')}: {$install_error|escape:'html'}</span>
+        </div>
+    {/if}
 
-                <ul class="nav nav-tabs" role="tablist">
+    <div class="cp-card">
+        <div class="cp-card-body">
+            <ul class="cp-tabs nav nav-tabs" role="tablist">
                     <li class="nav-item active"><a class="nav-link active" data-bs-toggle="tab" data-toggle="tab" href="#tabGeneral">{Lang::T('General')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabHours">{Lang::T('Support hours')}</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-toggle="tab" href="#tabModeration">{Lang::T('Tags &amp; Closure')}</a></li>
@@ -472,7 +473,6 @@
                         </div>
                     </div>
 
-                </div>
             </div>
         </div>
     </div>
