@@ -153,15 +153,15 @@
             'background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 8px 24px rgba(37,99,235,.4);font-size:24px;line-height:56px;cursor:pointer;padding:0;',
             'display:flex;align-items:center;justify-content:center;flex-direction:column;transition:transform .15s ease;}',
             '.cpchat-btn:hover{transform:scale(1.05)}',
-            '.cpchat-btn svg{width:25px;height:25px;fill:#fff}',
+            '.cpchat-btn svg{width:22px;height:22px;fill:#fff}',
             '.cpchat-badge{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;',
             'font-size:11px;font-weight:700;line-height:20px;padding:0 5px;display:none;font-family:sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.25)}',
             '.cpchat-badge.on{display:block}',
-            '.cpchat-panel{position:fixed;right:18px;bottom:18px;z-index:99991;width:370px;max-width:calc(100vw - 24px);height:540px;',
-            'max-height:calc(100vh - 32px);background:#fff;border-radius:22px;box-shadow:0 20px 60px rgba(15,23,42,.18);border:1px solid #eef2f7;display:none;',
+            '.cpchat-panel{position:fixed;top:12px;right:12px;bottom:12px;z-index:99991;width:390px;max-width:calc(100vw - 24px);height:auto;max-height:none;',
+            'background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(15,23,42,.18);border:1px solid #eef2f7;display:none;',
             'flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;color:#111827}',
             '.cpchat-panel.on{display:flex}',
-            '@media (max-width:480px){.cpchat-panel{right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:calc(100vh - 20px);max-height:600px;border-radius:18px}}',
+            '@media (max-width:480px){.cpchat-panel{top:auto;right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:calc(100vh - 20px);max-height:600px;border-radius:18px}}',
             '.cpchat-head{background:#fff;color:#111827;padding:12px 14px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f1f5f9}',
             '.cpchat-orb{width:34px;height:34px;border-radius:50%;flex-shrink:0;position:relative;',
             'background:radial-gradient(circle at 30% 30%,#fde047 0%,#fb7185 38%,#c084fc 72%,#60a5fa 100%);',
@@ -962,9 +962,12 @@
     function build() {
         injectStyle();
         var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        icon.setAttribute('viewBox', '0 0 24 24');
+        icon.setAttribute('viewBox', '0 0 16 16');
+        icon.setAttribute('width', '16');
+        icon.setAttribute('height', '16');
+        icon.setAttribute('fill', 'currentColor');
         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM7 9h10v1.5H7V9zm6 4.5H7v-1.5h6v1.5zM7 6h10v1.5H7V6z');
+        path.setAttribute('d', 'M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z');
         icon.appendChild(path);
 
         els.badge = el('span', 'cpchat-badge', '');
