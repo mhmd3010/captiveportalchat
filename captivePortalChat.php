@@ -38,7 +38,7 @@ unset($cpchatRoles, $cpchatLabel, $cpchatUnread);
  * Contact: https://t.me/mhmd_3010
  */
 
-$GLOBALS['captivePortalChat_version'] = '2.3.7';
+$GLOBALS['captivePortalChat_version'] = '2.3.8';
 
 /* ------------------------------------------------------------------ *
  *  Schema
@@ -396,6 +396,16 @@ function cpchat_url($function, $params = [])
     }
     $sep = (strpos($url, '?') === false) ? '?' : '&';
     return $url . $sep . http_build_query($params);
+}
+
+function cpchat_public_url($function, $params = [])
+{
+    $url = cpchat_url($function, $params);
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $url = preg_replace('#^https?://[^/]+#i', $scheme . '://' . $_SERVER['HTTP_HOST'], $url);
+    }
+    return $url;
 }
 
 function cpchat_client_ip()
@@ -1241,6 +1251,10 @@ function cpchatWidgetJs()
             $u = rtrim(APP_URL, '/') . '/' . ltrim($u, '/');
         }
         $logo = $u . '/logo.png';
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $logo = preg_replace('#^https?://[^/]+#i', $scheme . '://' . $_SERVER['HTTP_HOST'], $logo);
+        }
     }
     cpchat_output_asset(
         'widget.js',
@@ -1272,18 +1286,18 @@ function cpchatWidgetJs()
                 ];
             }, cpchat_faq_list(true)) : [],
             'urls' => [
-                'start' => cpchat_url('cpchatStart'),
-                'send' => cpchat_url('cpchatSend'),
-                'poll' => cpchat_url('cpchatPoll'),
-                'close' => cpchat_url('cpchatClose'),
-                'captcha' => cpchat_url('cpchatCaptcha'),
-                'plans' => cpchat_url('cpchatPlans'),
-                'account' => cpchat_url('cpchatAccount'),
-                'faqs' => cpchat_url('cpchatFaqs'),
-                'rate' => cpchat_url('cpchatRate'),
-                'typing' => cpchat_url('cpchatTyping'),
-                'upload' => cpchat_url('cpchatUpload'),
-                'file' => cpchat_url('cpchatFile'),
+                'start' => cpchat_public_url('cpchatStart'),
+                'send' => cpchat_public_url('cpchatSend'),
+                'poll' => cpchat_public_url('cpchatPoll'),
+                'close' => cpchat_public_url('cpchatClose'),
+                'captcha' => cpchat_public_url('cpchatCaptcha'),
+                'plans' => cpchat_public_url('cpchatPlans'),
+                'account' => cpchat_public_url('cpchatAccount'),
+                'faqs' => cpchat_public_url('cpchatFaqs'),
+                'rate' => cpchat_public_url('cpchatRate'),
+                'typing' => cpchat_public_url('cpchatTyping'),
+                'upload' => cpchat_public_url('cpchatUpload'),
+                'file' => cpchat_public_url('cpchatFile'),
             ],
         ]) . ";"
     );
